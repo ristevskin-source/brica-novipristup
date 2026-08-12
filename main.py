@@ -1,13 +1,12 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from datetime import datetime
 import baza
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Inicijalizacija baze pri pokretanju
+# Inicijalizacija baze
 baza.init_db()
 
 @app.get("/", response_class=HTMLResponse)
@@ -27,7 +26,7 @@ async def get_slotovi(datum_str: str):
 async def zakazi(data: dict):
     uspesno = baza.rezervisi_slotove(
         data['datum'], data['vreme'], data['ime'], 
-        data['telefon'], data['usluga'], data['cena'], data['trajanje']
+        data['telefon'], data['usluga'], data['cena'], data.get('trajanje', 30)
     )
     if uspesno:
         return {"status": "ok", "poruka": "Termin uspešno zakazan!"}
