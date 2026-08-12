@@ -50,28 +50,28 @@
 
     <!-- Modal za potvrdu rezervacije -->
     <div id="modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
+        <form onsubmit="event.preventDefault(); potvrdiZakazivanje();" autocomplete="off" class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
             <h3 class="text-xl font-bold gold-text">📝 Unesite podatke</h3>
-            <input type="text" id="klijentIme" placeholder="Ime i prezime *" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
-            <input type="tel" id="klijentTel" placeholder="Broj telefona *" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
+            <input type="text" id="klijentIme" name="klijent_ime" placeholder="Ime i prezime *" autocomplete="off" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
+            <input type="tel" id="klijentTel" name="klijent_tel" placeholder="Broj telefona *" autocomplete="off" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
             <div class="flex justify-between gap-2 pt-2">
-                <button onclick="zatvoriModal()" class="w-1/2 py-3 bg-zinc-700 rounded-lg text-white font-semibold">Odustani</button>
-                <button onclick="potvrdiZakazivanje()" class="w-1/2 py-3 gold-bg text-black font-bold rounded-lg">Zakaži</button>
+                <button type="button" onclick="zatvoriModal()" class="w-1/2 py-3 bg-zinc-700 rounded-lg text-white font-semibold">Odustani</button>
+                <button type="submit" class="w-1/2 py-3 gold-bg text-black font-bold rounded-lg">Zakaži</button>
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Modal za Unos Admin PIN-a -->
     <div id="adminModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
+        <form onsubmit="event.preventDefault(); proveriPin();" autocomplete="off" class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
             <h3 class="text-xl font-bold gold-text">🔒 Admin Prijava</h3>
-            <p class="text-xs text-gray-400">Unesite admin PIN kod za pristup (Podrazumevani PIN: 1234):</p>
-            <input type="password" id="adminPinInput" placeholder="Unesite PIN" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700 text-center text-xl">
+            <p class="text-xs text-gray-400">Unesite admin PIN kod za pristup:</p>
+            <input type="password" id="adminPinInput" name="admin_pin" placeholder="Unesite PIN" autocomplete="new-password" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700 text-center text-xl">
             <div class="flex justify-between gap-2 pt-2">
-                <button onclick="zatvoriAdminModal()" class="w-1/2 py-3 bg-zinc-700 rounded-lg text-white font-semibold">Odustani</button>
-                <button onclick="proveriPin()" class="w-1/2 py-3 gold-bg text-black font-bold rounded-lg">Prijavi se</button>
+                <button type="button" onclick="zatvoriAdminModal()" class="w-1/2 py-3 bg-zinc-700 rounded-lg text-white font-semibold">Odustani</button>
+                <button type="submit" class="w-1/2 py-3 gold-bg text-black font-bold rounded-lg">Prijavi se</button>
             </div>
-        </div>
+        </form>
     </div>
 
     <script>
