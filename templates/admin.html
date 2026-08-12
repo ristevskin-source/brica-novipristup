@@ -12,40 +12,53 @@
         .gold-text { color: #d4af37; }
     </style>
 </head>
-<body class="p-4 max-w-2xl mx-auto space-y-6">
+<body class="p-4 max-w-4xl mx-auto space-y-6">
 
     <div class="flex justify-between items-center mt-2">
         <h1 class="text-2xl font-bold gold-text">💈 Admin Panel</h1>
-        <a href="/" class="text-xs bg-zinc-800 p-2 rounded border border-zinc-700 text-gray-300">Nazad na sajt</a>
+        <a href="/" class="text-xs bg-zinc-800 p-2 rounded border border-zinc-700 text-gray-300 hover:border-yellow-500">Nazad na sajt</a>
     </div>
 
-    <!-- Sekcija 1: Upravljanje Uslugama -->
+    <!-- Upravljanje uslugama -->
     <div class="bg-zinc-900 p-4 rounded-xl border gold-border space-y-4">
         <h2 class="text-lg font-bold gold-text">✂️ Upravljanje Uslugama i Cenama</h2>
         
-        <!-- Forma za dodavanje nove usluge -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input type="text" id="novaUslugaIme" placeholder="Naziv (npr. Pranje kose)" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
             <input type="number" id="novaUslugaCena" placeholder="Cena (RSD)" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
             <input type="number" id="novaUslugaTrajanje" placeholder="Trajanje (min)" value="30" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
         </div>
-        <button onclick="dodajNovuUslugu()" class="w-full py-2.5 gold-bg text-black font-bold rounded-lg text-sm">
+        <button onclick="dodajNovuUslugu()" class="w-full py-2.5 gold-bg text-black font-bold rounded-lg text-sm hover:bg-yellow-400">
             ➕ Dodaj Uslugu
         </button>
 
-        <!-- Lista postojećih usluga -->
-        <div id="adminUslugeLista" class="space-y-2 pt-2">
-            <!-- Dinamički se puni preko JS-a -->
-        </div>
+        <div id="adminUslugeLista" class="space-y-2 pt-2"></div>
     </div>
 
-    <!-- Sekcija 2: Pregled Zakazanih Termina -->
+    <!-- Tabela zakazanih termina -->
     <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <h2 class="text-lg font-bold gold-text mb-3">📅 Pregled Zakazanih Termina</h2>
-        <input type="date" id="adminDatum" class="w-full bg-zinc-800 text-white p-3 rounded-lg border border-zinc-700 outline-none mb-4">
-        
-        <div id="listaTermina" class="space-y-3">
-            <!-- Termin kartice -->
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+            <h2 class="text-lg font-bold gold-text">📅 Zakazani Termini</h2>
+            <input type="date" id="adminDatum" class="bg-zinc-800 text-white p-2 rounded-lg border border-zinc-700 outline-none text-sm">
+        </div>
+
+        <!-- Tabela -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-zinc-800 gold-text uppercase text-xs">
+                    <tr>
+                        <th class="p-3">Vreme</th>
+                        <th class="p-3">Klijent</th>
+                        <th class="p-3">Telefon</th>
+                        <th class="p-3">Usluga</th>
+                        <th class="p-3">Cena</th>
+                        <th class="p-3 text-center">Akcija</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTelo" class="divide-y divide-zinc-800">
+                    <!-- Dinamički redovi -->
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -75,7 +88,7 @@
                     <div class="flex items-center gap-3">
                         <span class="gold-text font-bold text-sm">${u.cena} din</span>
                         <button onclick="obrisiUslugu(${u.id})" class="text-xs text-red-400 hover:text-red-300 bg-red-950/50 p-1.5 rounded border border-red-800">
-                            🗑️ Obrisi
+                            🗑️ Obriši
                         </button>
                     </div>
                 </div>
@@ -87,7 +100,7 @@
             const cena = document.getElementById('novaUslugaCena').value;
             const trajanje = document.getElementById('novaUslugaTrajanje').value;
 
-            if(!ime || !cena || !trajanje) return alert("Popunite sva polja za novu uslugu!");
+            if(!ime || !cena || !trajanje) return alert("Popunite sva polja!");
 
             await fetch('/api/usluge', {
                 method: 'POST',
@@ -110,30 +123,44 @@
             const datum = datumInput.value;
             const res = await fetch(`/api/slotovi/${datum}`);
             const slotovi = await res.json();
-            const container = document.getElementById('listaTermina');
+            const telo = document.getElementById('tabelaTelo');
 
             const zakazani = slotovi.filter(s => s.status === 'zakazan');
 
             if(zakazani.length === 0) {
-                container.innerHTML = `<p class="text-gray-500 text-sm italic text-center py-4">Nema zakazanih termina za izabrani datum.</p>`;
+                telo.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500 italic">Nema zakazanih termina za izabrani datum.</td></tr>`;
                 return;
             }
 
-            container.innerHTML = zakazani.map(s => `
-                <div class="p-4 rounded-lg bg-zinc-800 border border-zinc-700 flex justify-between items-center">
-                    <div>
-                        <div class="gold-text font-bold text-lg">⏰ ${s.vreme} h</div>
-                        <div class="font-semibold text-white">${s.ime || 'Nije uneto ime'}</div>
-                        <div class="text-sm text-gray-400">📞 ${s.telefon || 'Nije unet telefon'}</div>
-                    </div>
-                    <div class="text-right">
-                        <span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 text-xs px-2 py-1 rounded font-semibold block mb-1">
-                            ${s.usluga || 'Usluga'}
-                        </span>
-                        <div class="text-sm font-bold text-gray-300">${s.cena || 0} din</div>
-                    </div>
-                </div>
+            telo.innerHTML = zakazani.map(s => `
+                <tr class="hover:bg-zinc-800/50 transition">
+                    <td class="p-3 font-bold gold-text">⏰ ${s.vreme}</td>
+                    <td class="p-3 font-semibold text-white">${s.ime || '-'}</td>
+                    <td class="p-3">
+                        <a href="tel:${s.telefon}" class="text-blue-400 underline hover:text-blue-300">📞 ${s.telefon || '-'}</a>
+                    </td>
+                    <td class="p-3 text-gray-300">${s.usluga || '-'}</td>
+                    <td class="p-3 font-bold text-gray-200">${s.cena || 0} din</td>
+                    <td class="p-3 text-center">
+                        <button onclick="otkažiTermin('${datum}', '${s.vreme}')" class="px-2.5 py-1 text-xs bg-red-950 text-red-400 border border-red-800 rounded hover:bg-red-900">
+                            ❌ Otkaži
+                        </button>
+                    </td>
+                </tr>
             `).join('');
+        }
+
+        async function otkažiTermin(datum, vreme) {
+            if(!confirm(`Da li sigurno otkazujete termin u ${vreme}?`)) return;
+            
+            // Slanje zahteva za otkazivanje/oslobađanje slota
+            await fetch('/api/otkazi', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ datum, vreme })
+            });
+
+            ucitajZakazane();
         }
 
         ucitajUsluge();
