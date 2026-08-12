@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -5,7 +6,9 @@ from pydantic import BaseModel
 import baza
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 baza.init_db()
 
@@ -28,11 +31,11 @@ class OtkaziReq(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin.html")
 
 @app.get("/api/usluge")
 async def get_usluge():
@@ -65,7 +68,7 @@ async def delete_usluga(usluga_id: int):
 async def get_slotovi(datum: str):
     return baza.get_slotovi_za_datum(datum)
 
-@app.post("/api/zakaži")
+@app.post("/api/zakazi")
 async def zakazi(req: RezervacijaReq):
     uspeh = baza.zakazi_termin(req.datum, req.vreme, req.ime, req.telefon, req.usluga, req.cena)
     if uspeh:
