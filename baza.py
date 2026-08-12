@@ -49,7 +49,7 @@ def get_slotovi_za_datum(datum_str):
     c.execute("SELECT COUNT(*) FROM rezervacije WHERE datum=?", (datum_str,))
     if c.fetchone()[0] == 0:
         pocetak = datetime.strptime("09:00", "%H:%M")
-        kraj = datetime.strptime("17:00", "%H:%M")
+        kraj = datetime.strptime("20:00", "%H:%M")
         trenutno = pocetak
         while trenutno < kraj:
             vreme_str = trenutno.strftime("%H:%M")
