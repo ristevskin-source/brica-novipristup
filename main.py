@@ -18,6 +18,11 @@ except Exception as e:
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
+# ADMIN RUTA DODOATNA
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse(request=request, name="admin.html")
+
 @app.get("/api/usluge")
 async def get_usluge():
     return baza.get_usluge()
