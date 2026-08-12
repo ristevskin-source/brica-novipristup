@@ -30,7 +30,7 @@
     <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-4">
         <h2 class="text-sm font-semibold gold-text mb-3">💈 Odaberite uslugu</h2>
         <div id="uslugeLista" class="space-y-2">
-            <!-- Učitava se dinamički preko JS-a -->
+            <!-- Dinamički se učitava preko JS-a -->
         </div>
     </div>
 
@@ -59,8 +59,17 @@
         let izabranaUsluga = null;
         let izabraniTermin = null;
 
-        document.getElementById('datumInput').valueAsDate = new Date();
-        document.getElementById('datumInput').addEventListener('change', ucitajSlotove);
+        // Postavljamo današnji datum
+        const today = new Date().toISOString().split('T')[0];
+        const datumEl = document.getElementById('datumInput');
+        datumEl.value = today;
+
+        // Osvežavanje slotova čim korisnik promeni datum
+        datumEl.addEventListener('change', () => {
+            if (izabranaUsluga) {
+                ucitajSlotove();
+            }
+        });
 
         async function ucitajUsluge() {
             const res = await fetch('/api/usluge');
@@ -89,16 +98,18 @@
         async function ucitajSlotove() {
             if(!izabranaUsluga) return;
             const datum = document.getElementById('datumInput').value;
+            if(!datum) return;
+
             const res = await fetch(`/api/slotovi/${datum}`);
             const slotovi = await res.json();
             const grid = document.getElementById('slotoviGrid');
             
             grid.innerHTML = slotovi.map(s => {
                 if (s.vreme >= "13:00" && s.vreme < "14:00") {
-                    return `<button disabled class="p-2 bg-zinc-800 text-red-500 opacity-50 rounded-lg text-sm font-semibold">PAUZA</button>`;
+                    return `<button disabled class="p-2 bg-zinc-800 text-red-500 opacity-50 rounded-lg text-sm font-semibold cursor-not-allowed">PAUZA</button>`;
                 }
                 if (s.status === 'zakazan') {
-                    return `<button disabled class="p-2 bg-zinc-800 text-gray-500 opacity-40 rounded-lg text-sm">Zauzeto</button>`;
+                    return `<button disabled class="p-2 bg-zinc-800 text-gray-500 opacity-40 rounded-lg text-sm cursor-not-allowed">Zauzeto</button>`;
                 }
                 return `<button onclick="otvoriModal('${s.vreme}')" class="p-2 bg-zinc-800 text-green-400 border border-green-500/30 hover:border-green-500 rounded-lg text-sm font-bold">${s.vreme}</button>`;
             }).join('');
