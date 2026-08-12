@@ -10,35 +10,44 @@
         .gold-border { border-color: #d4af37; }
         .gold-bg { background-color: #d4af37; }
         .gold-text { color: #d4af37; }
+        
+        /* Fiksiranje prve kolone sa vremenom */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #18181b;
+            z-index: 10;
+        }
     </style>
 </head>
-<body class="p-4 max-w-6xl mx-auto space-y-6">
+<body class="p-2 sm:p-4 max-w-7xl mx-auto space-y-4">
 
     <!-- Header -->
     <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold gold-text">💈 Admin Nedeljni Kalendar</h1>
+        <h1 class="text-xl sm:text-2xl font-bold gold-text">💈 Admin Nedeljni Kalendar</h1>
         <a href="/" class="text-xs bg-zinc-800 p-2 rounded border border-zinc-700 text-gray-300 hover:border-yellow-500">Nazad na sajt</a>
     </div>
 
     <!-- Kontrole za nedelju -->
-    <div class="bg-zinc-900 p-4 rounded-xl border gold-border flex flex-wrap justify-between items-center gap-4">
+    <div class="bg-zinc-900 p-3 rounded-xl border gold-border flex flex-wrap justify-between items-center gap-3">
         <div>
             <label class="block text-xs gold-text font-semibold mb-1">Početni datum nedelje:</label>
-            <input type="date" id="startDatum" class="bg-zinc-800 text-white p-2 rounded border border-zinc-700 text-sm outline-none">
+            <input type="date" id="startDatum" class="bg-zinc-800 text-white p-1.5 rounded border border-zinc-700 text-xs outline-none">
         </div>
         <div class="flex gap-2">
-            <button onclick="pomeriNedelju(-7)" class="px-3 py-1.5 bg-zinc-800 border border-zinc-700 hover:border-yellow-500 rounded text-sm">◀ Prethodna nedelja</button>
-            <button onclick="postaviDanas()" class="px-3 py-1.5 gold-bg text-black font-bold rounded text-sm">Danas</button>
-            <button onclick="pomeriNedelju(7)" class="px-3 py-1.5 bg-zinc-800 border border-zinc-700 hover:border-yellow-500 rounded text-sm">Sledeća nedelja ▶</button>
+            <button onclick="pomeriNedelju(-7)" class="px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 hover:border-yellow-500 rounded text-xs">◀ Prethodna</button>
+            <button onclick="postaviDanas()" class="px-3 py-1.5 gold-bg text-black font-bold rounded text-xs">Danas</button>
+            <button onclick="pomeriNedelju(7)" class="px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 hover:border-yellow-500 rounded text-xs">Sledeća ▶</button>
         </div>
     </div>
 
     <!-- Tabela 7 Dana -->
-    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 overflow-x-auto">
-        <table class="w-full text-center border-collapse min-w-[700px]">
+    <div class="bg-zinc-900 p-2 rounded-xl border border-zinc-800 overflow-x-auto relative shadow-2xl">
+        <table class="w-full text-center border-collapse table-fixed min-w-[800px]">
             <thead>
                 <tr id="zaglavljeDana" class="bg-zinc-800 text-xs gold-text uppercase">
-                    <th class="p-2 border border-zinc-700 w-20">Vreme</th>
+                    <th class="p-2 border border-zinc-700 w-16 sticky-col">Vreme</th>
+                    <!-- 7 Dana -->
                 </tr>
             </thead>
             <tbody id="tabelaMreza" class="text-xs">
@@ -47,7 +56,7 @@
         </table>
     </div>
 
-    <!-- Modal za detalje / Otkazivanje -->
+    <!-- Modal za Detalje Zakazanog Termina ili Otkazivanje -->
     <div id="detaljiModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-3">
             <h3 class="text-lg font-bold gold-text" id="modalNaslov">Detalji Termina</h3>
@@ -57,6 +66,41 @@
                 <button id="otkaziDugme" class="px-4 py-2 bg-red-900 hover:bg-red-800 border border-red-700 rounded text-white text-xs font-bold">❌ Otkaži Termin</button>
             </div>
         </div>
+    </div>
+
+    <!-- Modal za Novu Admin Rezervaciju -->
+    <div id="novaRezervacijaModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-50">
+        <form onsubmit="event.preventDefault(); sacuvajAdminZakazivanje();" autocomplete="off" class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
+            <h3 class="text-lg font-bold gold-text">➕ Novo Zakazivanje</h3>
+            <p id="infoPrikaz" class="text-xs gold-text font-semibold"></p>
+            
+            <input type="hidden" id="adminDatum">
+            <input type="hidden" id="adminVreme">
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Ime i prezime klijenta *</label>
+                <input type="text" id="adminIme" required placeholder="Ime klijenta" autocomplete="off" class="w-full bg-zinc-800 p-2.5 rounded text-white border border-zinc-700 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Broj telefona *</label>
+                <input type="tel" id="adminTel" required placeholder="06x xxx xxxx" autocomplete="off" class="w-full bg-zinc-800 p-2.5 rounded text-white border border-zinc-700 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Izaberite uslugu *</label>
+                <select id="adminUsluga" required class="w-full bg-zinc-800 p-2.5 rounded text-white border border-zinc-700 text-sm">
+                    <option value="Šišanje|1000">Šišanje - 1000 RSD</option>
+                    <option value="Brada / Brijanje|600">Brada / Brijanje - 600 RSD</option>
+                    <option value="Šišanje + Brada|1500">Šišanje + Brada - 1500 RSD</option>
+                </select>
+            </div>
+
+            <div class="flex justify-between gap-2 pt-2">
+                <button type="button" onclick="zatvoriNovoZakazivanje()" class="w-1/2 py-2 bg-zinc-700 rounded text-white font-semibold text-xs">Odustani</button>
+                <button type="submit" class="w-1/2 py-2 gold-bg text-black font-bold rounded text-xs">Zakaži</button>
+            </div>
+        </form>
     </div>
 
     <script>
@@ -108,10 +152,10 @@
 
                 // Zaglavlje
                 const headerRow = document.getElementById('zaglavljeDana');
-                headerRow.innerHTML = `<th class="p-2 border border-zinc-700 w-20">Vreme</th>` + 
-                    datumHeaders.map(dh => `<th class="p-2 border border-zinc-700">${dh.naziv}</th>`).join('');
+                headerRow.innerHTML = `<th class="p-2 border border-zinc-700 w-16 sticky-col">Vreme</th>` + 
+                    datumHeaders.map(dh => `<th class="p-1 border border-zinc-700 text-[11px]">${dh.naziv}</th>`).join('');
 
-                // Preuzimanje slotova za svih 7 dana
+                // Preuzimanje podatak za 7 dana
                 const podaciPoDanima = {};
                 for(let dStr of dani) {
                     try {
@@ -122,28 +166,31 @@
                     }
                 }
 
-                // Popunjavanje tabele
+                // Popunjavanje mreže
                 const tabelaMreza = document.getElementById('tabelaMreza');
                 tabelaMreza.innerHTML = sati.map(vreme => {
                     let red = `<tr class="border-b border-zinc-800">`;
-                    red += `<td class="p-2 font-bold gold-text border-r border-zinc-800">${vreme}</td>`;
+                    red += `<td class="p-1 font-bold gold-text border-r border-zinc-800 sticky-col text-[11px]">${vreme}</td>`;
 
                     dani.forEach(dStr => {
                         const slotovi = podaciPoDanima[dStr] || [];
                         const slot = Array.isArray(slotovi) ? slotovi.find(s => s.vreme === vreme) : null;
 
                         if (vreme >= "13:00" && vreme < "14:00") {
-                            red += `<td class="p-1 border border-zinc-800/50 bg-zinc-950/40 text-red-500/60 font-semibold text-[10px]">PAUZA</td>`;
+                            red += `<td class="p-1 border border-zinc-800/50 bg-zinc-950/40 text-red-500/50 font-semibold text-[10px]">PAUZA</td>`;
                         } else if (slot && slot.status === 'zakazan') {
-                            red += `<td class="p-1 border border-zinc-800">
+                            red += `<td class="p-0.5 border border-zinc-800">
                                 <button onclick="prikaziDetalje('${dStr}', '${vreme}', '${slot.ime || 'Klijent'}', '${slot.telefon || ''}', '${slot.usluga || ''}', ${slot.cena || 0})" 
-                                        class="w-full py-1.5 px-1 bg-red-950/80 border border-red-700 hover:bg-red-900 text-red-200 rounded font-bold text-[11px] truncate block">
+                                        class="w-full py-1.5 px-0.5 bg-red-950/80 border border-red-700 hover:bg-red-900 text-red-200 rounded font-bold text-[10px] truncate block">
                                     ✂️ ${slot.ime || 'Zakazano'}
                                 </button>
                             </td>`;
                         } else {
-                            red += `<td class="p-1 border border-zinc-800">
-                                <span class="text-zinc-600 text-[10px] block py-1.5">Slobodno</span>
+                            red += `<td class="p-0.5 border border-zinc-800">
+                                <button onclick="otvoriNovoZakazivanje('${dStr}', '${vreme}')" 
+                                        class="w-full py-1.5 px-0.5 bg-emerald-950/40 hover:bg-emerald-800/60 border border-emerald-800/50 hover:border-emerald-500 text-emerald-400 rounded text-[10px] font-medium transition block">
+                                    + Slobodno
+                                </button>
                             </td>`;
                         }
                     });
@@ -156,6 +203,7 @@
             }
         }
 
+        // Prikaz detalja za zakazani termin
         function prikaziDetalje(datum, vreme, ime, telefon, usluga, cena) {
             document.getElementById('modalNaslov').innerText = `Termin: ${vreme} h (${datum})`;
             document.getElementById('modalSadrzaj').innerHTML = `
@@ -182,6 +230,44 @@
 
         function zatvoriDetalje() {
             document.getElementById('detaljiModal').classList.add('hidden');
+        }
+
+        // Otvaranje forme za rucno zakazivanje slobodnog slota
+        function otvoriNovoZakazivanje(datum, vreme) {
+            document.getElementById('adminDatum').value = datum;
+            document.getElementById('adminVreme').value = vreme;
+            document.getElementById('infoPrikaz').innerText = `Termin: ${datum} u ${vreme} h`;
+            document.getElementById('adminIme').value = '';
+            document.getElementById('adminTel').value = '';
+            document.getElementById('novaRezervacijaModal').classList.remove('hidden');
+        }
+
+        function zatvoriNovoZakazivanje() {
+            document.getElementById('novaRezervacijaModal').classList.add('hidden');
+        }
+
+        async function sacuvajAdminZakazivanje() {
+            const datum = document.getElementById('adminDatum').value;
+            const vreme = document.getElementById('adminVreme').value;
+            const ime = document.getElementById('adminIme').value;
+            const telefon = document.getElementById('adminTel').value;
+            const uslugaVal = document.getElementById('adminUsluga').value.split('|');
+            const usluga = uslugaVal[0];
+            const cena = parseInt(uslugaVal[1]);
+
+            const res = await fetch('/api/zakazi', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ datum, vreme, ime, telefon, usluga, cena })
+            });
+
+            const data = await res.json();
+            if(data.status === 'ok') {
+                zatvoriNovoZakazivanje();
+                ucitajNedelju();
+            } else {
+                alert(data.poruka || 'Greška prilikom zakazivanja.');
+            }
         }
 
         postaviDanas();
