@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kod Kubanca — Sedmodnevni Admin Kalendar</title>
+    <title>Kod Kubanca — Nedeljni Admin Kalendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #121212; color: #ffffff; }
@@ -39,11 +39,10 @@
             <thead>
                 <tr id="zaglavljeDana" class="bg-zinc-800 text-xs gold-text uppercase">
                     <th class="p-2 border border-zinc-700 w-20">Vreme</th>
-                    <!-- 7 Dana idu ovde -->
                 </tr>
             </thead>
             <tbody id="tabelaMreza" class="text-xs">
-                <!-- Redovi slotova -->
+                <tr><td colspan="8" class="p-4 text-center text-gray-400">Učitavanje kalendara...</td></tr>
             </tbody>
         </table>
     </div>
@@ -67,7 +66,10 @@
         const startDatumEl = document.getElementById('startDatum');
 
         function formatDate(date) {
-            return date.toISOString().split('T')[0];
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
         }
 
         function postaviDanas() {
@@ -83,65 +85,75 @@
         }
 
         startDatumEl.addEventListener('change', (e) => {
-            trenutniPocetniDatum = new Date(e.target.value);
-            ucitajNedelju();
+            if (e.target.value) {
+                trenutniPocetniDatum = new Date(e.target.value);
+                ucitajNedelju();
+            }
         });
 
         async function ucitajNedelju() {
-            const dani = [];
-            const datumHeaders = [];
-            
-            for(let i = 0; i < 7; i++) {
-                const d = new Date(trenutniPocetniDatum);
-                d.setDate(d.getDate() + i);
-                const dStr = formatDate(d);
-                dani.push(dStr);
+            try {
+                const dani = [];
+                const datumHeaders = [];
                 
-                const nazivDana = d.toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric', month: 'numeric' });
-                datumHeaders.push({ str: dStr, naziv: nazivDana });
-            }
+                for(let i = 0; i < 7; i++) {
+                    const d = new Date(trenutniPocetniDatum);
+                    d.setDate(d.getDate() + i);
+                    const dStr = formatDate(d);
+                    dani.push(dStr);
+                    
+                    const nazivDana = d.toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric', month: 'numeric' });
+                    datumHeaders.push({ str: dStr, naziv: nazivDana });
+                }
 
-            // Prikaz zaglavlja
-            const headerRow = document.getElementById('zaglavljeDana');
-            headerRow.innerHTML = `<th class="p-2 border border-zinc-700 w-20">Vreme</th>` + 
-                datumHeaders.map(dh => `<th class="p-2 border border-zinc-700">${dh.naziv}</th>`).join('');
+                // Zaglavlje
+                const headerRow = document.getElementById('zaglavljeDana');
+                headerRow.innerHTML = `<th class="p-2 border border-zinc-700 w-20">Vreme</th>` + 
+                    datumHeaders.map(dh => `<th class="p-2 border border-zinc-700">${dh.naziv}</th>`).join('');
 
-            // Dobavljanje podataka za svih 7 dana paralelno
-            const podaciPoDanima = {};
-            for(let dStr of dani) {
-                const res = await fetch(`/api/slotovi/${dStr}`);
-                podaciPoDanima[dStr] = await res.json();
-            }
-
-            // Popunjavanje mreže
-            const tabelaMreza = document.getElementById('tabelaMreza');
-            tabelaMreza.innerHTML = sati.map(vreme => {
-                let red = `<tr class="border-b border-zinc-800">`;
-                red += `<td class="p-2 font-bold gold-text border-r border-zinc-800">${vreme}</td>`;
-
-                dani.forEach(dStr => {
-                    const slotovi = podaciPoDanima[dStr] || [];
-                    const slot = slotovi.find(s => s.vreme === vreme);
-
-                    if (vreme >= "13:00" && vreme < "14:00") {
-                        red += `<td class="p-1 border border-zinc-800/50 bg-zinc-950/40 text-red-500/60 font-semibold text-[10px]">PAUZA</td>`;
-                    } else if (slot && slot.status === 'zakazan') {
-                        red += `<td class="p-1 border border-zinc-800">
-                            <button onclick="prikaziDetalje('${dStr}', '${vreme}', '${slot.ime}', '${slot.telefon}', '${slot.usluga}', ${slot.cena})" 
-                                    class="w-full py-1.5 px-1 bg-red-950/80 border border-red-700 hover:bg-red-900 text-red-200 rounded font-bold text-[11px] truncate block">
-                                ✂️ ${slot.ime}
-                            </button>
-                        </td>`;
-                    } else {
-                        red += `<td class="p-1 border border-zinc-800">
-                            <span class="text-zinc-600 text-[10px] block py-1.5">Slobodno</span>
-                        </td>`;
+                // Preuzimanje slotova za svih 7 dana
+                const podaciPoDanima = {};
+                for(let dStr of dani) {
+                    try {
+                        const res = await fetch(`/api/slotovi/${dStr}`);
+                        podaciPoDanima[dStr] = await res.json();
+                    } catch (e) {
+                        podaciPoDanima[dStr] = [];
                     }
-                });
+                }
 
-                red += `</tr>`;
-                return red;
-            }).join('');
+                // Popunjavanje tabele
+                const tabelaMreza = document.getElementById('tabelaMreza');
+                tabelaMreza.innerHTML = sati.map(vreme => {
+                    let red = `<tr class="border-b border-zinc-800">`;
+                    red += `<td class="p-2 font-bold gold-text border-r border-zinc-800">${vreme}</td>`;
+
+                    dani.forEach(dStr => {
+                        const slotovi = podaciPoDanima[dStr] || [];
+                        const slot = Array.isArray(slotovi) ? slotovi.find(s => s.vreme === vreme) : null;
+
+                        if (vreme >= "13:00" && vreme < "14:00") {
+                            red += `<td class="p-1 border border-zinc-800/50 bg-zinc-950/40 text-red-500/60 font-semibold text-[10px]">PAUZA</td>`;
+                        } else if (slot && slot.status === 'zakazan') {
+                            red += `<td class="p-1 border border-zinc-800">
+                                <button onclick="prikaziDetalje('${dStr}', '${vreme}', '${slot.ime || 'Klijent'}', '${slot.telefon || ''}', '${slot.usluga || ''}', ${slot.cena || 0})" 
+                                        class="w-full py-1.5 px-1 bg-red-950/80 border border-red-700 hover:bg-red-900 text-red-200 rounded font-bold text-[11px] truncate block">
+                                    ✂️ ${slot.ime || 'Zakazano'}
+                                </button>
+                            </td>`;
+                        } else {
+                            red += `<td class="p-1 border border-zinc-800">
+                                <span class="text-zinc-600 text-[10px] block py-1.5">Slobodno</span>
+                            </td>`;
+                        }
+                    });
+
+                    red += `</tr>`;
+                    return red;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         function prikaziDetalje(datum, vreme, ime, telefon, usluga, cena) {
