@@ -6,11 +6,9 @@ import baza
 
 app = FastAPI()
 
-# Pravilno određivanje putanje do templates fascikle
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# Inicijalizacija baze
 try:
     baza.init_db()
 except Exception as e:
@@ -18,7 +16,7 @@ except Exception as e:
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/api/usluge")
 async def get_usluge():
