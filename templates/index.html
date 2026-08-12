@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kod Kubanca — Zakazivanje</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #121212; color: #ffffff; }
+        .gold-border { border-color: #d4af37; }
+        .gold-bg { background-color: #d4af37; }
+        .gold-text { color: #d4af37; }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto">
+
+    <!-- Header / Logo -->
+    <div class="text-center my-6">
+        <h1 class="text-3xl font-bold gold-text">✂️ KOD KUBANCA</h1>
+        <p class="text-gray-400 text-sm">Brzo i lako zakazivanje termina</p>
+    </div>
+
+    <!-- Korak 1: Datum -->
+    <div class="bg-zinc-900 p-4 rounded-xl border gold-border mb-4">
+        <label class="block text-sm font-semibold gold-text mb-2">📅 Odaberite datum</label>
+        <input type="date" id="datumInput" class="w-full bg-zinc-800 text-white p-3 rounded-lg border border-zinc-700 outline-none focus:border-yellow-500">
+    </div>
+
+    <!-- Korak 2: Usluge -->
+    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-4">
+        <h2 class="text-sm font-semibold gold-text mb-3">💈 Odaberite uslugu</h2>
+        <div id="uslugeLista" class="space-y-2">
+            <!-- Učitava se dinamički preko JS-a -->
+        </div>
+    </div>
+
+    <!-- Korak 3: Slotovi / Vreme -->
+    <div id="slotoviSekcija" class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-4 hidden">
+        <h2 class="text-sm font-semibold gold-text mb-3">⏰ Odaberite slobodan termin</h2>
+        <div id="slotoviGrid" class="grid grid-cols-3 gap-2">
+            <!-- Složeni slotovi -->
+        </div>
+    </div>
+
+    <!-- Modal za potvrdu -->
+    <div id="modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 p-6 rounded-2xl border gold-border w-full max-w-sm space-y-4">
+            <h3 class="text-xl font-bold gold-text">📝 Unesite podatke</h3>
+            <input type="text" id="klijentIme" placeholder="Ime i prezime *" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
+            <input type="tel" id="klijentTel" placeholder="Broj telefona *" class="w-full bg-zinc-800 p-3 rounded-lg text-white border border-zinc-700">
+            <div class="flex justify-between gap-2 pt-2">
+                <button onclick="zatvoriModal()" class="w-1/2 py-3 bg-zinc-700 rounded-lg text-white font-semibold">Odustani</button>
+                <button onclick="potvrdiZakazivanje()" class="w-1/2 py-3 gold-bg text-black font-bold rounded-lg">Zakaži</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let izabranaUsluga = null;
+        let izabraniTermin = null;
+
+        document.getElementById('datumInput').valueAsDate = new Date();
+        document.getElementById('datumInput').addEventListener('change', ucitajSlotove);
+
+        async function ucitajUsluge() {
+            const res = await fetch('/api/usluge');
+            const usluge = await res.json();
+            const container = document.getElementById('uslugeLista');
+            container.innerHTML = usluge.map(u => `
+                <div onclick="izaberiUslugi('${u.ime}', ${u.cena}, ${u.trajanje}, this)" 
+                     class="usluga-card p-3 rounded-lg bg-zinc-800 border border-zinc-700 cursor-pointer flex justify-between items-center hover:border-yellow-500">
+                    <div>
+                        <div class="font-bold">${u.ime}</div>
+                        <div class="text-xs text-gray-400">${u.trajanje} min</div>
+                    </div>
+                    <div class="gold-text font-bold">${u.cena} din</div>
+                </div>
+            `).join('');
+        }
+
+        function izaberiUslugi(ime, cena, trajanje, el) {
+            document.querySelectorAll('.usluga-card').forEach(c => c.classList.remove('border-yellow-500', 'bg-zinc-700'));
+            el.classList.add('border-yellow-500', 'bg-zinc-700');
+            izabranaUsluga = { ime, cena, trajanje };
+            document.getElementById('slotoviSekcija').classList.remove('hidden');
+            ucitajSlotove();
+        }
+
+        async function ucitajSlotove() {
+            if(!izabranaUsluga) return;
+            const datum = document.getElementById('datumInput').value;
+            const res = await fetch(`/api/slotovi/${datum}`);
+            const slotovi = await res.json();
+            const grid = document.getElementById('slotoviGrid');
+            
+            grid.innerHTML = slotovi.map(s => {
+                if (s.vreme >= "13:00" && s.vreme < "14:00") {
+                    return `<button disabled class="p-2 bg-zinc-800 text-red-500 opacity-50 rounded-lg text-sm font-semibold">PAUZA</button>`;
+                }
+                if (s.status === 'zakazan') {
+                    return `<button disabled class="p-2 bg-zinc-800 text-gray-500 opacity-40 rounded-lg text-sm">Zauzeto</button>`;
+                }
+                return `<button onclick="otvoriModal('${s.vreme}')" class="p-2 bg-zinc-800 text-green-400 border border-green-500/30 hover:border-green-500 rounded-lg text-sm font-bold">${s.vreme}</button>`;
+            }).join('');
+        }
+
+        function otvoriModal(vreme) {
+            izabraniTermin = vreme;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function zatvoriModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        async function potvrdiZakazivanje() {
+            const ime = document.getElementById('klijentIme').value;
+            const telefon = document.getElementById('klijentTel').value;
+            const datum = document.getElementById('datumInput').value;
+
+            if(!ime || !telefon) return alert("Popunite sva polja!");
+
+            const res = await fetch('/api/zakazi', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    datum, vreme: izabraniTermin, ime, telefon,
+                    usluga: izabranaUsluga.ime, cena: izabranaUsluga.cena, trajanje: izabranaUsluga.trajanje
+                })
+            });
+
+            const data = await res.json();
+            if(res.ok) {
+                alert(data.poruka);
+                zatvoriModal();
+                ucitajSlotove();
+            } else {
+                alert(data.poruka);
+            }
+        }
+
+        ucitajUsluge();
+    </script>
+</body>
+</html>
