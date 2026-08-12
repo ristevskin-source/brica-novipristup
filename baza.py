@@ -76,7 +76,7 @@ def get_slotovi_za_dan(datum_str):
     conn.close()
     return [{"vreme": r[0], "ime": r[1], "telefon": r[2], "usluga": r[3], "status": r[4]} for r in rows]
 
-def rezervisi_slotove(datum, vreme, ime, telefon, usluga, cena, trajanje):
+def rezervisi_slotove(datum, vreme, ime, telefon, usluga, cena, trajanje=30):
     conn = get_connection()
     c = conn.cursor()
     
