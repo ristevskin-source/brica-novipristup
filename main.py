@@ -1,13 +1,20 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import baza
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+
+# Pravilno određivanje putanje do templates fascikle
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # Inicijalizacija baze
-baza.init_db()
+try:
+    baza.init_db()
+except Exception as e:
+    print(f"Greska pri inicijalizaciji baze: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -30,4 +37,4 @@ async def zakazi(data: dict):
     )
     if uspesno:
         return {"status": "ok", "poruka": "Termin uspešno zakazan!"}
-    return JSONResponse(status_code=400, content={"status": "error", "poruka": "Termin je u međuvremenu zauzet."})
+    return JSONResponse(status_code=400, content={"status": "error", "poruka": "Termin je zauzet."})
