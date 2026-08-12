@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-DB_NAME = "brica.db"
+DB_NAME = 'brica.db'
 
 def get_connection():
     return sqlite3.connect(DB_NAME)
@@ -9,78 +9,89 @@ def get_connection():
 def init_db():
     conn = get_connection()
     c = conn.cursor()
-    c.execute("""
+    
+    # Tabela usluga
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS usluge (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ime TEXT NOT NULL,
+            cena INTEGER NOT NULL,
+            trajanje INTEGER NOT NULL
+        )
+    ''')
+    
+    # Podrazumevane usluge ako je tabela prazna
+    c.execute("SELECT COUNT(*) FROM usluge")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje', 1000, 30)")
+        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Breda / Brijanje', 600, 30)")
+        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje + Brada', 1500, 45)")
+
+    # Tabela rezervacija
+    c.execute('''
         CREATE TABLE IF NOT EXISTS rezervacije (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            datum TEXT,
-            vreme TEXT,
+            datum TEXT NOT NULL,
+            vreme TEXT NOT NULL,
             ime TEXT,
             telefon TEXT,
             usluga TEXT,
             cena INTEGER,
-            status TEXT DEFAULT 'zakazan',
-            payment_method TEXT DEFAULT ''
+            status TEXT DEFAULT 'slobodan'
         )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS usluge (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ime TEXT,
-            cena INTEGER,
-            trajanje INTEGER
-        )
-    """)
+    ''')
     
-    # Unos podrazumevanih usluga ako baza nema ništa
-    c.execute("SELECT COUNT(*) FROM usluge")
-    if c.fetchone()[0] == 0:
-        prazne_usluge = [
-            ("Šišanje", 800, 30),
-            ("Šišanje + Brada", 1200, 45),
-            ("Brada", 500, 20),
-            ("Obrve", 400, 15)
-        ]
-        c.executemany("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", prazne_usluge)
-        
     conn.commit()
     conn.close()
 
 def get_usluge():
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT ime, cena, trajanje FROM usluge")
+    c.execute("SELECT id, ime, cena, trajanje FROM usluge")
     rows = c.fetchall()
     conn.close()
-    return [{"ime": r[0], "cena": r[1], "trajanje": r[2]} for r in rows]
+    return [{"id": r[0], "ime": r[1], "cena": r[2], "trajanje": r[3]} for r in rows]
+
+def dodaj_uslugu(ime, cena, trajanje):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
+    conn.commit()
+    conn.close()
+
+def obrisi_uslugu(usluga_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM usluge WHERE id=?", (usluga_id,))
+    conn.commit()
+    conn.close()
 
 def generisi_slotove_za_dan(datum_str):
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM rezervacije WHERE datum=?", (datum_str,))
     if c.fetchone()[0] == 0:
-        vremena = [
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-            "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-            "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
-        ]
-        for v in vremena:
-            c.execute("INSERT INTO rezervacije (datum, vreme, status) VALUES (?, ?, 'slobodan')", (datum_str, v))
+        pocetak = datetime.strptime("09:00", "%H:%M")
+        kraj = datetime.strptime("17:00", "%H:%M")
+        trenutno = pocetak
+        while trenutno < kraj:
+            vreme_str = trenutno.strftime("%H:%M")
+            c.execute("INSERT INTO rezervacije (datum, vreme, status) VALUES (?, ?, 'slobodan')", (datum_str, vreme_str))
+            trenutno += timedelta(minutes=30)
         conn.commit()
     conn.close()
 
 def get_slotovi_za_dan(datum_str):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT vreme, ime, telefon, usluga, status FROM rezervacije WHERE datum=? ORDER BY vreme ASC", (datum_str,))
+    c.execute("SELECT vreme, status, ime, telefon, usluga, cena FROM rezervacije WHERE datum=? ORDER BY vreme", (datum_str,))
     rows = c.fetchall()
     conn.close()
-    return [{"vreme": r[0], "ime": r[1], "telefon": r[2], "usluga": r[3], "status": r[4]} for r in rows]
+    return [{"vreme": r[0], "status": r[1], "ime": r[2], "telefon": r[3], "usluga": r[4], "cena": r[5]} for r in rows]
 
 def rezervisi_slotove(datum, vreme, ime, telefon, usluga, cena, trajanje=30):
     conn = get_connection()
     c = conn.cursor()
-    
-    # Provera slobodnog slota
     c.execute("SELECT status FROM rezervacije WHERE datum=? AND vreme=?", (datum, vreme))
     res = c.fetchone()
     if not res or res[0] != 'slobodan':
