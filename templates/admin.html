@@ -8,25 +8,42 @@
     <style>
         body { background-color: #121212; color: #ffffff; }
         .gold-border { border-color: #d4af37; }
+        .gold-bg { background-color: #d4af37; }
         .gold-text { color: #d4af37; }
     </style>
 </head>
-<body class="p-4 max-w-2xl mx-auto">
+<body class="p-4 max-w-2xl mx-auto space-y-6">
 
-    <div class="flex justify-between items-center my-6">
+    <div class="flex justify-between items-center mt-2">
         <h1 class="text-2xl font-bold gold-text">💈 Admin Panel</h1>
         <a href="/" class="text-xs bg-zinc-800 p-2 rounded border border-zinc-700 text-gray-300">Nazad na sajt</a>
     </div>
 
-    <!-- Filter po datumu -->
-    <div class="bg-zinc-900 p-4 rounded-xl border gold-border mb-6">
-        <label class="block text-sm font-semibold gold-text mb-2">📅 Izaberite datum za pregled</label>
-        <input type="date" id="adminDatum" class="w-full bg-zinc-800 text-white p-3 rounded-lg border border-zinc-700 outline-none">
+    <!-- Sekcija 1: Upravljanje Uslugama -->
+    <div class="bg-zinc-900 p-4 rounded-xl border gold-border space-y-4">
+        <h2 class="text-lg font-bold gold-text">✂️ Upravljanje Uslugama i Cenama</h2>
+        
+        <!-- Forma za dodavanje nove usluge -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" id="novaUslugaIme" placeholder="Naziv (npr. Pranje kose)" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
+            <input type="number" id="novaUslugaCena" placeholder="Cena (RSD)" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
+            <input type="number" id="novaUslugaTrajanje" placeholder="Trajanje (min)" value="30" class="bg-zinc-800 p-2.5 rounded text-sm text-white border border-zinc-700">
+        </div>
+        <button onclick="dodajNovuUslugu()" class="w-full py-2.5 gold-bg text-black font-bold rounded-lg text-sm">
+            ➕ Dodaj Uslugu
+        </button>
+
+        <!-- Lista postojećih usluga -->
+        <div id="adminUslugeLista" class="space-y-2 pt-2">
+            <!-- Dinamički se puni preko JS-a -->
+        </div>
     </div>
 
-    <!-- Lista zakazanih termina -->
+    <!-- Sekcija 2: Pregled Zakazanih Termina -->
     <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <h2 class="text-lg font-bold gold-text mb-4">📋 Zakazani termini</h2>
+        <h2 class="text-lg font-bold gold-text mb-3">📅 Pregled Zakazanih Termina</h2>
+        <input type="date" id="adminDatum" class="w-full bg-zinc-800 text-white p-3 rounded-lg border border-zinc-700 outline-none mb-4">
+        
         <div id="listaTermina" class="space-y-3">
             <!-- Termin kartice -->
         </div>
@@ -38,6 +55,56 @@
         datumInput.value = today;
 
         datumInput.addEventListener('change', ucitajZakazane);
+
+        async function ucitajUsluge() {
+            const res = await fetch('/api/usluge');
+            const usluge = await res.json();
+            const container = document.getElementById('adminUslugeLista');
+
+            if (usluge.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 italic">Nema unetih usluga.</p>`;
+                return;
+            }
+
+            container.innerHTML = usluge.map(u => `
+                <div class="p-3 bg-zinc-800 rounded-lg border border-zinc-700 flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-white text-sm">${u.ime}</span>
+                        <span class="text-xs text-gray-400 ml-2">(${u.trajanje} min)</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="gold-text font-bold text-sm">${u.cena} din</span>
+                        <button onclick="obrisiUslugu(${u.id})" class="text-xs text-red-400 hover:text-red-300 bg-red-950/50 p-1.5 rounded border border-red-800">
+                            🗑️ Obrisi
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function dodajNovuUslugu() {
+            const ime = document.getElementById('novaUslugaIme').value;
+            const cena = document.getElementById('novaUslugaCena').value;
+            const trajanje = document.getElementById('novaUslugaTrajanje').value;
+
+            if(!ime || !cena || !trajanje) return alert("Popunite sva polja za novu uslugu!");
+
+            await fetch('/api/usluge', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ime, cena: parseInt(cena), trajanje: parseInt(trajanje) })
+            });
+
+            document.getElementById('novaUslugaIme').value = '';
+            document.getElementById('novaUslugaCena').value = '';
+            ucitajUsluge();
+        }
+
+        async function obrisiUslugu(id) {
+            if(!confirm("Da li ste sigurni da želite da obrišete ovu uslugu?")) return;
+            await fetch(`/api/usluge/${id}`, { method: 'DELETE' });
+            ucitajUsluge();
+        }
 
         async function ucitajZakazane() {
             const datum = datumInput.value;
@@ -69,6 +136,7 @@
             `).join('');
         }
 
+        ucitajUsluge();
         ucitajZakazane();
     </script>
 </body>
