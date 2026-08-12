@@ -18,7 +18,6 @@ except Exception as e:
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
-# ADMIN RUTA DODOATNA
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin.html")
@@ -26,6 +25,16 @@ async def admin_page(request: Request):
 @app.get("/api/usluge")
 async def get_usluge():
     return baza.get_usluge()
+
+@app.post("/api/usluge")
+async def dodaj_uslugu(data: dict):
+    baza.dodaj_uslugu(data['ime'], data['cena'], data['trajanje'])
+    return {"status": "ok", "poruka": "Usluga dodata!"}
+
+@app.delete("/api/usluge/{usluga_id}")
+async def obrisi_uslugu(usluga_id: int):
+    baza.obrisi_uslugu(usluga_id)
+    return {"status": "ok", "poruka": "Usluga obrisana!"}
 
 @app.get("/api/slotovi/{datum_str}")
 async def get_slotovi(datum_str: str):
