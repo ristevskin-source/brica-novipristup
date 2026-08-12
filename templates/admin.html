@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kod Kubanca — Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #121212; color: #ffffff; }
+        .gold-border { border-color: #d4af37; }
+        .gold-text { color: #d4af37; }
+    </style>
+</head>
+<body class="p-4 max-w-2xl mx-auto">
+
+    <div class="flex justify-between items-center my-6">
+        <h1 class="text-2xl font-bold gold-text">💈 Admin Panel</h1>
+        <a href="/" class="text-xs bg-zinc-800 p-2 rounded border border-zinc-700 text-gray-300">Nazad na sajt</a>
+    </div>
+
+    <!-- Filter po datumu -->
+    <div class="bg-zinc-900 p-4 rounded-xl border gold-border mb-6">
+        <label class="block text-sm font-semibold gold-text mb-2">📅 Izaberite datum za pregled</label>
+        <input type="date" id="adminDatum" class="w-full bg-zinc-800 text-white p-3 rounded-lg border border-zinc-700 outline-none">
+    </div>
+
+    <!-- Lista zakazanih termina -->
+    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+        <h2 class="text-lg font-bold gold-text mb-4">📋 Zakazani termini</h2>
+        <div id="listaTermina" class="space-y-3">
+            <!-- Termin kartice -->
+        </div>
+    </div>
+
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        const datumInput = document.getElementById('adminDatum');
+        datumInput.value = today;
+
+        datumInput.addEventListener('change', ucitajZakazane);
+
+        async function ucitajZakazane() {
+            const datum = datumInput.value;
+            const res = await fetch(`/api/slotovi/${datum}`);
+            const slotovi = await res.json();
+            const container = document.getElementById('listaTermina');
+
+            const zakazani = slotovi.filter(s => s.status === 'zakazan');
+
+            if(zakazani.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-sm italic text-center py-4">Nema zakazanih termina za izabrani datum.</p>`;
+                return;
+            }
+
+            container.innerHTML = zakazani.map(s => `
+                <div class="p-4 rounded-lg bg-zinc-800 border border-zinc-700 flex justify-between items-center">
+                    <div>
+                        <div class="gold-text font-bold text-lg">⏰ ${s.vreme} h</div>
+                        <div class="font-semibold text-white">${s.ime || 'Nije uneto ime'}</div>
+                        <div class="text-sm text-gray-400">📞 ${s.telefon || 'Nije unet telefon'}</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 text-xs px-2 py-1 rounded font-semibold block mb-1">
+                            ${s.usluga || 'Usluga'}
+                        </span>
+                        <div class="text-sm font-bold text-gray-300">${s.cena || 0} din</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        ucitajZakazane();
+    </script>
+</body>
+</html>
