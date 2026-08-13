@@ -41,6 +41,9 @@ class UslugaReq(BaseModel):
     cena: int
     trajanje: int
 
+class AzurirajUsluguReq(BaseModel):
+    cena: int
+
 class OtkaziReq(BaseModel):
     datum: str
     vreme: str
@@ -53,31 +56,24 @@ async def home(request: Request):
 async def admin_page(request: Request, user: str = Depends(proveri_admina)):
     return templates.TemplateResponse(request=request, name="admin.html")
 
+
 @app.get("/api/usluge")
 async def get_usluge():
-    conn = baza.get_connection()
-    c = conn.cursor()
-    c.execute("SELECT id, ime, cena, trajanje FROM usluge")
-    redovi = c.fetchall()
-    conn.close()
-    return [{"id": r[0], "ime": r[1], "cena": r[2], "trajanje": r[3]} for r in redovi]
+    return baza.get_sve_usluge()
 
 @app.post("/api/usluge")
 async def add_usluga(u: UslugaReq):
-    conn = baza.get_connection()
-    c = conn.cursor()
-    c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (u.ime, u.cena, u.trajanje))
-    conn.commit()
-    conn.close()
+    baza.dodaj_uslugu(u.ime, u.cena, u.trajanje)
+    return {"status": "ok"}
+
+@app.put("/api/usluge/{usluga_id}")
+async def update_usluga(usluga_id: int, req: AzurirajUsluguReq):
+    baza.azuriraj_uslugu(usluga_id, req.cena)
     return {"status": "ok"}
 
 @app.delete("/api/usluge/{usluga_id}")
 async def delete_usluga(usluga_id: int):
-    conn = baza.get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM usluge WHERE id=?", (usluga_id,))
-    conn.commit()
-    conn.close()
+    baza.obrisi_uslugu(usluga_id)
     return {"status": "ok"}
 
 @app.get("/api/slotovi/{datum}")
