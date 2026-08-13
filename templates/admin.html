@@ -5,20 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Brica</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .service-card {
+            background: #1e1e1e;
+            border: 1px solid #3f3f3f;
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+        }
+        .service-card:hover {
+            border-color: #d4af37;
+            background: #2a2a2a;
+        }
+        .service-card input[type="number"] {
+            width: 60px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #3f3f3f;
+            background: #0d0d0d;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+        }
+        .service-card input[type="number"]:focus {
+            border-color: #d4af37;
+            outline: none;
+        }
+        .btn-save {
+            background: #2563eb;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-save:hover {
+            background: #1d4ed8;
+        }
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+        .btn-add {
+            background: #d4af37;
+            color: black;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-add:hover {
+            background: #f59e0b;
+            transform: scale(1.02);
+        }
+        .btn-add:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .input-field {
+            background: #0d0d0d;
+            border: 1px solid #3f3f3f;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+        }
+        .input-field:focus {
+            border-color: #d4af37;
+            outline: none;
+        }
+    </style>
 </head>
 <body class="bg-zinc-900 text-white min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
+        <!-- Zaglavlje -->
         <div class="flex justify-between items-center mb-8 border-b border-zinc-700 pb-4">
             <h1 class="text-3xl font-bold text-amber-500">💈 Admin Panel - Brica</h1>
             <a href="/" class="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold text-sm">Nazad na sajt</a>
         </div>
 
+        <!-- ========================================== -->
+        <!-- UPRAVLJANJE USLUGAMA - IZVADJENO IZNAD TABELE -->
+        <!-- ========================================== -->
+        <div class="bg-zinc-800 p-4 rounded-lg border border-zinc-700 mb-6">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+                <div class="flex items-center gap-3 flex-1 flex-wrap">
+                    <span class="text-amber-500 font-bold text-sm whitespace-nowrap">📋 Usluge:</span>
+                    <input type="text" id="novoIme" placeholder="Naziv" class="input-field w-32 md:w-40">
+                    <input type="number" id="novaCena" placeholder="Cena" class="input-field w-24 md:w-28">
+                    <input type="number" id="novoTrajanje" placeholder="Min" value="30" class="input-field w-20 md:w-24">
+                    <button onclick="dodajNovuUslugu()" class="btn-add">➕ Dodaj</button>
+                </div>
+            </div>
+            
+            <!-- Lista usluga - mala, kompaktna -->
+            <div id="listaUslugaAdmin" class="mt-3 space-y-1 max-h-60 overflow-y-auto">
+                <div class="text-center py-2 text-zinc-500 text-sm">⏳ Učitavanje usluga...</div>
+            </div>
+        </div>
+
+        <!-- Navigacija za nedelje -->
         <div class="flex justify-between items-center bg-zinc-800 p-4 rounded-lg mb-6 border border-zinc-700">
             <button onclick="promeniNedelju(-1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">← Prethodna nedelja</button>
             <span id="rasponNedelje" class="text-lg font-bold text-zinc-300"></span>
             <button onclick="promeniNedelju(1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">Sledeća nedelja →</button>
         </div>
 
+        <!-- Tabela rasporeda -->
         <div class="overflow-x-auto bg-zinc-800 rounded-lg border border-zinc-700 mb-8">
             <table class="w-full text-left text-sm">
                 <thead class="bg-zinc-700 text-amber-500 uppercase font-bold text-center">
@@ -29,33 +140,6 @@
                 <tbody id="teloTabele" class="divide-y divide-zinc-700 text-center">
                 </tbody>
             </table>
-        </div>
-
-        <!-- UPRAVLJANJE USLUGAMA -->
-        <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700">
-            <h2 class="text-xl font-bold text-amber-500 mb-4">📋 Upravljanje uslugama i cenama</h2>
-            
-            <!-- RED ZA DODAVANJE -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-                <input type="text" id="novoIme" name="novoIme"
-                       placeholder="Naziv usluge" 
-                       class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
-                <input type="number" id="novaCena" name="novaCena"
-                       placeholder="Cena u RSD" 
-                       class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
-                <input type="number" id="novoTrajanje" name="novoTrajanje"
-                       placeholder="Trajanje (min)" value="30"
-                       class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
-                <button onclick="dodajNovuUslugu()" 
-                        class="bg-amber-600 hover:bg-amber-500 text-black font-bold py-3 rounded-lg transition-all">
-                    ➕ Dodaj uslugu
-                </button>
-            </div>
-            
-            <!-- LISTA USLUGA -->
-            <div id="listaUslugaAdmin" class="space-y-2">
-                <div class="text-center py-4 text-zinc-500">⏳ Učitavanje usluga...</div>
-            </div>
         </div>
     </div>
 
@@ -229,39 +313,29 @@
             
             if (usluge.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-4 text-zinc-500 border border-dashed border-zinc-700 rounded-lg">
-                        <p class="text-sm">📭 Nema dodatih usluga</p>
-                        <p class="text-xs text-zinc-600 mt-1">Dodajte prvu uslugu iznad</p>
+                    <div class="text-center py-2 text-zinc-500 text-sm">
+                        📭 Nema dodatih usluga
                     </div>
                 `;
                 return;
             }
             
             container.innerHTML = usluge.map(u => `
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-3 bg-zinc-900/50 rounded-lg border border-zinc-700 hover:border-amber-500/50 transition">
-                    <div class="flex-1">
-                        <span class="font-semibold text-zinc-200">${u.ime}</span>
-                        <span class="text-xs ml-2 px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full">${u.trajanje || 30} min</span>
+                <div class="service-card">
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold text-zinc-200 text-sm">${u.ime}</span>
+                        <span class="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full">${u.trajanje || 30} min</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1 bg-zinc-800 rounded-lg px-2 py-1">
-                            <span class="text-xs text-zinc-400">RSD</span>
-                            <input type="number" 
-                                   id="cena-${u.id}" 
-                                   name="cena-${u.id}"
-                                   value="${u.cena}" 
-                                   min="0" 
-                                   step="50"
-                                   class="w-20 p-1 bg-zinc-900 border border-zinc-700 rounded text-white text-center font-bold focus:border-amber-500 focus:outline-none">
-                        </div>
-                        <button onclick="sacuvajCenu(${u.id})" 
-                                class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all">
-                            💾 Sačuvaj
-                        </button>
-                        <button onclick="obrisiUslugu(${u.id})" 
-                                class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all">
-                            🗑️ Obriši
-                        </button>
+                        <span class="text-xs text-zinc-400">RSD</span>
+                        <input type="number" 
+                               id="cena-${u.id}" 
+                               name="cena-${u.id}"
+                               value="${u.cena}" 
+                               min="0" 
+                               step="50">
+                        <button onclick="sacuvajCenu(${u.id})" class="btn-save">💾</button>
+                        <button onclick="obrisiUslugu(${u.id})" class="btn-delete">🗑️</button>
                     </div>
                 </div>
             `).join('');
@@ -269,10 +343,9 @@
         } catch (error) {
             console.error('❌ Greška:', error);
             container.innerHTML = `
-                <div class="text-center py-4 text-red-500 border border-red-500/30 rounded-lg">
-                    <p>❌ Greška pri učitavanju usluga</p>
-                    <p class="text-xs mt-1">${error.message}</p>
-                    <button onclick="ucitajUslugeAdmin()" class="mt-2 text-xs text-amber-400 hover:underline">
+                <div class="text-center py-2 text-red-500 text-sm">
+                    ❌ Greška: ${error.message}
+                    <button onclick="ucitajUslugeAdmin()" class="text-amber-400 hover:underline ml-2">
                         🔄 Pokušaj ponovo
                     </button>
                 </div>
@@ -303,7 +376,7 @@
         
         const dugme = event.target;
         const originalText = dugme.textContent;
-        dugme.textContent = '⏳ Dodavanje...';
+        dugme.textContent = '⏳';
         dugme.disabled = true;
         
         try {
@@ -328,7 +401,7 @@
             cenaInput.value = '';
             trajanjeInput.value = '30';
             
-            alert('✅ Usluga "' + ime + '" uspešno dodata!');
+            alert('✅ Usluga "' + ime + '" dodata!');
             ucitajUslugeAdmin();
             
         } catch (error) {
@@ -363,7 +436,7 @@
                 throw new Error(error.poruka || 'Greška pri ažuriranju');
             }
             
-            alert('✅ Cena uspešno ažurirana na ' + novaCena + ' RSD');
+            alert('✅ Cena ažurirana na ' + novaCena + ' RSD');
             ucitajUslugeAdmin();
             
         } catch (error) {
@@ -380,7 +453,7 @@
             if (usluga) ime = usluga.ime;
         } catch (e) {}
         
-        if (!confirm(`⚠️ Da li ste sigurni da želite da obrišete "${ime}"?`)) {
+        if (!confirm(`⚠️ Obriši "${ime}"?`)) {
             return;
         }
         
@@ -394,7 +467,7 @@
                 throw new Error(error.poruka || 'Greška pri brisanju');
             }
             
-            alert('✅ Usluga "' + ime + '" uspešno obrisana!');
+            alert('✅ Usluga "' + ime + '" obrisana!');
             ucitajUslugeAdmin();
             
         } catch (error) {
