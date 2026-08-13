@@ -1,11 +1,27 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import baza
 
 app = FastAPI()
+security = HTTPBasic()
+
+def proveri_admina(credentials: HTTPBasicCredentials = Depends(security)):
+    ispravno_ime = secrets.compare_digest(credentials.username, "admin")
+    ispravna_lozinka = secrets.compare_digest(credentials.password, "srbkub")
+    if not (ispravno_ime and ispravna_lozinka):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Netačno korisničko ime ili lozinka",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
@@ -34,7 +50,7 @@ async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request):
+async def admin_page(request: Request, user: str = Depends(proveri_admina)):
     return templates.TemplateResponse(request=request, name="admin.html")
 
 @app.get("/api/usluge")
