@@ -107,19 +107,20 @@ def api_slotovi(datum):
 
     return jsonify(svi_slotovi)
 
-@app.route('/api/usluge/<int:id>', methods=['PUT', 'DELETE'])
-def api_usluge_id(id):
+@app.route('/api/usluge', methods=['GET', 'POST'])
+def api_usluge():
     conn = get_connection()
     c = conn.cursor()
-    if request.method == 'PUT':
-        data = request.get_json()
-        nova_cena = data.get('cena')
-        c.execute("UPDATE usluge SET cena = ? WHERE id = ?", (nova_cena, id))
-        conn.commit()
+    if request.method == 'GET':
+        c.execute("SELECT * FROM usluge")
+        usluge = [dict(row) for row in c.fetchall()]
         conn.close()
-        return jsonify({'status': 'ok'})
-    elif request.method == 'DELETE':
-        c.execute("DELETE FROM usluge WHERE id = ?", (id,))
+        return jsonify(usluge)
+    elif request.method == 'POST':
+        data = request.get_json()
+        ime = data.get('ime')
+        cena = data.get('cena')
+        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, 30)", (ime, cena))
         conn.commit()
         conn.close()
         return jsonify({'status': 'ok'})
