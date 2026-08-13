@@ -23,7 +23,6 @@
         .services-row input[type="number"].small { width: 80px; }
         .btn-add { background: #d4af37; color: black; padding: 8px 20px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
         .btn-add:hover { background: #f59e0b; }
-        .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .service-item { background: #0d0d0d; border: 1px solid #2d2d2d; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .service-item:hover { border-color: #d4af37; }
@@ -87,7 +86,7 @@
                 <input type="text" id="novoIme" placeholder="Naziv usluge">
                 <input type="number" id="novaCena" placeholder="Cena">
                 <input type="number" id="novoTrajanje" placeholder="Trajanje" value="30" class="small">
-                <button onclick="dodajNovuUslugu()" class="btn-add" id="btnDodaj">➕ Dodaj uslugu</button>
+                <button onclick="dodajNovuUslugu()" class="btn-add">➕ Dodaj uslugu</button>
             </div>
             <div id="listaUslugaAdmin">
                 <div class="empty-message">⏳ Učitavanje usluga...</div>
@@ -221,6 +220,7 @@
     }
 
     function zatvoriNovoZakazivanje() {
+        document.getElementById('novaRezervacijaModal').classList.remove('remove');
         document.getElementById('novaRezervacijaModal').classList.remove('show');
     }
 
