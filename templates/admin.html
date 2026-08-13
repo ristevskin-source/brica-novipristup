@@ -4,406 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Brica</title>
-    <!-- NE KORISTIMO TAILWIND - SAMO ČIST CSS -->
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: system-ui, -apple-system, sans-serif;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: #121212; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; padding: 20px; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3f3f3f; padding-bottom: 16px; margin-bottom: 32px; }
+        .header h1 { color: #d4af37; font-size: 28px; font-weight: bold; }
+        .header a { background: #2d2d2d; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600; }
+        .header a:hover { background: #3d3d3d; }
         
-        /* Zaglavlje */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #3f3f3f;
-            padding-bottom: 16px;
-            margin-bottom: 32px;
-        }
-        .header h1 {
-            color: #d4af37;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .header a {
-            background: #2d2d2d;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .header a:hover {
-            background: #3d3d3d;
-        }
-
-        /* Box za usluge */
-        .services-box {
-            background: #1e1e1e;
-            border: 1px solid #3f3f3f;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        .services-box h2 {
-            color: #d4af37;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
-        }
-        .services-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .services-row input {
-            background: #0d0d0d;
-            border: 1px solid #3f3f3f;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: white;
-            font-size: 14px;
-        }
-        .services-row input:focus {
-            border-color: #d4af37;
-            outline: none;
-        }
-        .services-row input[type="text"] {
-            width: 160px;
-        }
-        .services-row input[type="number"] {
-            width: 100px;
-        }
-        .services-row input[type="number"].small {
-            width: 80px;
-        }
-        .btn-add {
-            background: #d4af37;
-            color: black;
-            padding: 8px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-add:hover {
-            background: #f59e0b;
-        }
-        .btn-add:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Lista usluga */
-        .service-item {
-            background: #0d0d0d;
-            border: 1px solid #2d2d2d;
-            border-radius: 6px;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-        .service-item:hover {
-            border-color: #d4af37;
-        }
-        .service-item .name {
-            font-weight: 600;
-            font-size: 14px;
-            color: #e0e0e0;
-        }
-        .service-item .duration {
-            font-size: 11px;
-            background: rgba(212, 175, 55, 0.2);
-            color: #d4af37;
-            padding: 2px 8px;
-            border-radius: 12px;
-            margin-left: 8px;
-        }
-        .service-item .controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .service-item .controls .label {
-            font-size: 11px;
-            color: #888;
-        }
-        .service-item .controls input[type="number"] {
-            width: 60px;
-            padding: 4px 6px;
-            border-radius: 4px;
-            border: 1px solid #3f3f3f;
-            background: #0d0d0d;
-            color: white;
-            text-align: center;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .service-item .controls input[type="number"]:focus {
-            border-color: #d4af37;
-            outline: none;
-        }
-        .btn-save {
-            background: #2563eb;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-save:hover {
-            background: #1d4ed8;
-        }
-        .btn-delete {
-            background: #dc2626;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-delete:hover {
-            background: #b91c1c;
-        }
-        .empty-message {
-            text-align: center;
-            padding: 12px;
-            color: #666;
-            font-size: 14px;
-        }
-        .error-message {
-            text-align: center;
-            padding: 12px;
-            color: #ef4444;
-            font-size: 14px;
-        }
-
-        /* Navigacija */
-        .nav-week {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1e1e1e;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid #3f3f3f;
-            margin-bottom: 24px;
-        }
-        .nav-week button {
-            background: #d4af37;
-            color: black;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        .nav-week button:hover {
-            background: #f59e0b;
-        }
-        .nav-week span {
-            font-weight: bold;
-            color: #a0a0a0;
-        }
-
-        /* Tabela */
-        .table-wrap {
-            overflow-x: auto;
-            background: #1e1e1e;
-            border-radius: 8px;
-            border: 1px solid #3f3f3f;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        thead {
-            background: #2d2d2d;
-            color: #d4af37;
-            text-transform: uppercase;
-            font-weight: bold;
-            text-align: center;
-        }
-        th {
-            padding: 12px;
-            border-bottom: 1px solid #3f3f3f;
-        }
-        td {
-            padding: 6px;
-            border: 1px solid #2d2d2d;
-            text-align: center;
-        }
-        td .time-label {
-            color: #d4af37;
-            font-weight: bold;
-        }
-        .slot-free {
-            color: #666;
-            font-size: 11px;
-            cursor: pointer;
-        }
-        .slot-free:hover {
-            background: #2d2d2d;
-        }
-        .slot-booked {
-            background: rgba(220, 38, 38, 0.3);
-            color: #fca5a5;
-            font-size: 12px;
-        }
-        .slot-booked .name {
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .slot-booked .detail {
-            font-size: 10px;
-            color: #888;
-        }
-        .slot-booked .btn-free {
-            background: #991b1b;
-            color: white;
-            border: none;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            cursor: pointer;
-            margin-top: 2px;
-        }
-        .slot-booked .btn-free:hover {
-            background: #7f1d1d;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal.show {
-            display: flex;
-        }
-        .modal-content {
-            background: #1e1e1e;
-            padding: 24px;
-            border-radius: 8px;
-            border: 1px solid #3f3f3f;
-            width: 100%;
-            max-width: 400px;
-        }
-        .modal-content h3 {
-            color: #d4af37;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 16px;
-        }
-        .modal-content label {
-            font-size: 11px;
-            color: #888;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .modal-content input, .modal-content select {
-            width: 100%;
-            padding: 8px 12px;
-            background: #0d0d0d;
-            border: 1px solid #3f3f3f;
-            border-radius: 6px;
-            color: white;
-            margin-bottom: 12px;
-        }
-        .modal-content input:focus, .modal-content select:focus {
-            border-color: #d4af37;
-            outline: none;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            padding-top: 8px;
-        }
-        .modal-actions button {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        .modal-actions .btn-confirm {
-            background: #d4af37;
-            color: black;
-        }
-        .modal-actions .btn-confirm:hover {
-            background: #f59e0b;
-        }
-        .modal-actions .btn-cancel {
-            background: #2d2d2d;
-            color: white;
-        }
-        .modal-actions .btn-cancel:hover {
-            background: #3d3d3d;
-        }
+        .services-box { background: #1e1e1e; border: 1px solid #3f3f3f; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+        .services-box h2 { color: #d4af37; font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+        .services-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .services-row input { background: #0d0d0d; border: 1px solid #3f3f3f; border-radius: 6px; padding: 8px 12px; color: white; font-size: 14px; }
+        .services-row input:focus { border-color: #d4af37; outline: none; }
+        .services-row input[type="text"] { width: 160px; }
+        .services-row input[type="number"] { width: 100px; }
+        .services-row input[type="number"].small { width: 80px; }
+        .btn-add { background: #d4af37; color: black; padding: 8px 20px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
+        .btn-add:hover { background: #f59e0b; }
+        .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .service-item { background: #0d0d0d; border: 1px solid #2d2d2d; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .service-item:hover { border-color: #d4af37; }
+        .service-item .name { font-weight: 600; font-size: 14px; color: #e0e0e0; }
+        .service-item .duration { font-size: 11px; background: rgba(212, 175, 55, 0.2); color: #d4af37; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
+        .service-item .controls { display: flex; align-items: center; gap: 6px; }
+        .service-item .controls .label { font-size: 11px; color: #888; }
+        .service-item .controls input[type="number"] { width: 70px; padding: 4px 6px; border-radius: 4px; border: 1px solid #3f3f3f; background: #0d0d0d; color: white; text-align: center; font-weight: bold; font-size: 13px; }
+        .service-item .controls input[type="number"]:focus { border-color: #d4af37; outline: none; }
+        .btn-save { background: #2563eb; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-save:hover { background: #1d4ed8; }
+        .btn-delete { background: #dc2626; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-delete:hover { background: #b91c1c; }
+        .empty-message { text-align: center; padding: 12px; color: #666; font-size: 14px; }
+        .error-message { text-align: center; padding: 12px; color: #ef4444; font-size: 14px; }
+        
+        .nav-week { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 16px; border-radius: 8px; border: 1px solid #3f3f3f; margin-bottom: 24px; }
+        .nav-week button { background: #d4af37; color: black; padding: 8px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
+        .nav-week button:hover { background: #f59e0b; }
+        .nav-week span { font-weight: bold; color: #a0a0a0; }
+        
+        .table-wrap { overflow-x: auto; background: #1e1e1e; border-radius: 8px; border: 1px solid #3f3f3f; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead { background: #2d2d2d; color: #d4af37; text-transform: uppercase; font-weight: bold; text-align: center; }
+        th { padding: 12px; border-bottom: 1px solid #3f3f3f; }
+        td { padding: 6px; border: 1px solid #2d2d2d; text-align: center; }
+        td .time-label { color: #d4af37; font-weight: bold; }
+        .slot-free { color: #666; font-size: 11px; cursor: pointer; }
+        .slot-free:hover { background: #2d2d2d; }
+        .slot-booked { background: rgba(220, 38, 38, 0.3); color: #fca5a5; font-size: 12px; }
+        .slot-booked .name { font-weight: bold; font-size: 11px; }
+        .slot-booked .detail { font-size: 10px; color: #888; }
+        .slot-booked .btn-free { background: #991b1b; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; margin-top: 2px; }
+        .slot-booked .btn-free:hover { background: #7f1d1d; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: #1e1e1e; padding: 24px; border-radius: 8px; border: 1px solid #3f3f3f; width: 100%; max-width: 400px; }
+        .modal-content h3 { color: #d4af37; font-size: 18px; font-weight: bold; margin-bottom: 16px; }
+        .modal-content label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #3f3f3f; border-radius: 6px; color: white; margin-bottom: 12px; }
+        .modal-content input:focus, .modal-content select:focus { border-color: #d4af37; outline: none; }
+        .modal-actions { display: flex; gap: 8px; padding-top: 8px; }
+        .modal-actions button { flex: 1; padding: 10px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
+        .modal-actions .btn-confirm { background: #d4af37; color: black; }
+        .modal-actions .btn-confirm:hover { background: #f59e0b; }
+        .modal-actions .btn-cancel { background: #2d2d2d; color: white; }
+        .modal-actions .btn-cancel:hover { background: #3d3d3d; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Zaglavlje -->
         <div class="header">
             <h1>💈 Admin Panel - Brica</h1>
             <a href="/">Nazad na sajt</a>
         </div>
 
-        <!-- ========================================== -->
-        <!-- UPRAVLJANJE USLUGAMA -->
-        <!-- ========================================== -->
         <div class="services-box">
             <h2>📋 Upravljanje uslugama i cenama</h2>
-            
             <div class="services-row">
                 <input type="text" id="novoIme" placeholder="Naziv usluge">
                 <input type="number" id="novaCena" placeholder="Cena">
                 <input type="number" id="novoTrajanje" placeholder="Trajanje" value="30" class="small">
                 <button onclick="dodajNovuUslugu()" class="btn-add" id="btnDodaj">➕ Dodaj uslugu</button>
             </div>
-            
             <div id="listaUslugaAdmin">
                 <div class="empty-message">⏳ Učitavanje usluga...</div>
             </div>
         </div>
 
-        <!-- Navigacija -->
         <div class="nav-week">
             <button onclick="promeniNedelju(-1)">← Prethodna nedelja</button>
             <span id="rasponNedelje"></span>
             <button onclick="promeniNedelju(1)">Sledeća nedelja →</button>
         </div>
 
-        <!-- Tabela -->
         <div class="table-wrap">
             <table>
                 <thead>
@@ -417,22 +113,17 @@
         </div>
     </div>
 
-    <!-- Modal -->
     <div id="novaRezervacijaModal" class="modal">
         <div class="modal-content">
             <h3>Zakazivanje termina</h3>
             <input type="hidden" id="adminDatum">
             <input type="hidden" id="adminVreme">
-            
             <label>Ime klijenta:</label>
             <input type="text" id="adminIme">
-            
             <label>Telefon:</label>
             <input type="text" id="adminTel">
-            
             <label>Usluga:</label>
             <select id="adminUsluga"></select>
-            
             <div class="modal-actions">
                 <button onclick="sacuvajAdminZakazivanje()" class="btn-confirm">Potvrdi</button>
                 <button onclick="zatvoriNovoZakazivanje()" class="btn-cancel">Otkaži</button>
@@ -441,10 +132,6 @@
     </div>
 
     <script>
-    // ============================================
-    // RASPORED
-    // ============================================
-    
     let trenutniPonedeljak = getPonedeljak(new Date());
 
     function getPonedeljak(d) {
@@ -482,7 +169,6 @@
         try {
             let res = await fetch('/api/raspored_nedelja?pocetak=' + prviDan + '&kraj=' + poslednjiDan);
             let podaci = await res.json();
-
             let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
             let tbody = '';
             sati.forEach(vreme => {
@@ -523,7 +209,6 @@
         document.getElementById('adminVreme').value = vreme;
         document.getElementById('adminIme').value = '';
         document.getElementById('adminTel').value = '';
-        
         try {
             let res = await fetch('/api/usluge');
             let usluge = await res.json();
@@ -532,7 +217,6 @@
         } catch(e) {
             console.error('Greška:', e);
         }
-        
         document.getElementById('novaRezervacijaModal').classList.add('show');
     }
 
@@ -563,56 +247,34 @@
         }
     }
 
-    // ============================================
-    // UPRAVLJANJE USLUGAMA
-    // ============================================
-
     async function ucitajUslugeAdmin() {
         const container = document.getElementById('listaUslugaAdmin');
         if (!container) return;
-        
         try {
-            console.log('🔄 Učitavanje usluga...');
             const res = await fetch('/api/usluge');
-            
-            if (!res.ok) {
-                throw new Error('HTTP greška: ' + res.status);
-            }
-            
+            if (!res.ok) throw new Error('HTTP greška: ' + res.status);
             const usluge = await res.json();
-            console.log('✅ Usluge učitane:', usluge);
-            
             if (usluge.length === 0) {
                 container.innerHTML = '<div class="empty-message">📭 Nema dodatih usluga</div>';
                 return;
             }
-            
-            container.innerHTML = usluge.map(u => `
-                <div class="service-item">
-                    <div>
-                        <span class="name">${u.ime}</span>
-                        <span class="duration">${u.trajanje || 30} min</span>
-                    </div>
-                    <div class="controls">
-                        <span class="label">RSD</span>
-                        <input type="number" id="cena-${u.id}" value="${u.cena}" min="0" step="50">
-                        <button class="btn-save" onclick="sacuvajCenu(${u.id})">💾</button>
-                        <button class="btn-delete" onclick="obrisiUslugu(${u.id})">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-            
+            container.innerHTML = usluge.map(u => 
+                '<div class="service-item">' +
+                    '<div>' +
+                        '<span class="name">' + u.ime + '</span>' +
+                        '<span class="duration">' + (u.trajanje || 30) + ' min</span>' +
+                    '</div>' +
+                    '<div class="controls">' +
+                        '<span class="label">RSD</span>' +
+                        '<input type="number" id="cena-' + u.id + '" value="' + u.cena + '" min="0" step="50">' +
+                        '<button class="btn-save" onclick="sacuvajCenu(' + u.id + ')">💾 Sačuvaj</button>' +
+                        '<button class="btn-delete" onclick="obrisiUslugu(' + u.id + ')">🗑️ Obriši</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
         } catch (error) {
-            console.error('❌ Greška:', error);
-            container.innerHTML = `
-                <div class="error-message">
-                    ❌ Greška: ${error.message}
-                    <br>
-                    <button onclick="ucitajUslugeAdmin()" style="background:#d4af37;color:black;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;margin-top:8px;">
-                        🔄 Pokušaj ponovo
-                    </button>
-                </div>
-            `;
+            console.error('Greška:', error);
+            container.innerHTML = '<div class="error-message">❌ Greška pri učitavanju usluga</div>';
         }
     }
 
@@ -620,129 +282,63 @@
         const imeInput = document.getElementById('novoIme');
         const cenaInput = document.getElementById('novaCena');
         const trajanjeInput = document.getElementById('novoTrajanje');
-        
+
         const ime = imeInput.value.trim();
         const cena = cenaInput.value.trim();
         const trajanje = trajanjeInput.value.trim() || 30;
-        
-        if (!ime) {
-            alert('⚠️ Unesite naziv usluge!');
-            imeInput.focus();
+
+        if (!ime || !cena) {
+            alert('⚠️ Unesite naziv i cenu usluge!');
             return;
         }
-        
-        if (!cena || parseInt(cena) <= 0) {
-            alert('⚠️ Unesite ispravnu cenu!');
-            cenaInput.focus();
-            return;
-        }
-        
-        const dugme = document.getElementById('btnDodaj');
-        const originalText = dugme.textContent;
-        dugme.textContent = '⏳';
-        dugme.disabled = true;
-        
+
         try {
             const res = await fetch('/api/usluge', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ime: ime,
-                    cena: parseInt(cena),
-                    trajanje: parseInt(trajanje)
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ime: ime, cena: parseInt(cena), trajanje: parseInt(trajanje) })
             });
-            
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.poruka || 'Greška pri dodavanju');
-            }
-            
+            if (!res.ok) throw new Error('Greška pri dodavanju');
             imeInput.value = '';
             cenaInput.value = '';
-            trajanjeInput.value = '30';
-            
-            alert('✅ Usluga "' + ime + '" uspešno dodata!');
             ucitajUslugeAdmin();
-            
         } catch (error) {
             alert('❌ Greška: ' + error.message);
-        } finally {
-            dugme.textContent = originalText;
-            dugme.disabled = false;
         }
     }
 
     async function sacuvajCenu(id) {
-        const cenaInput = document.getElementById(`cena-${id}`);
+        const cenaInput = document.getElementById('cena-' + id);
         const novaCena = parseInt(cenaInput.value);
-        
         if (isNaN(novaCena) || novaCena < 0) {
             alert('⚠️ Unesite ispravnu cenu!');
-            cenaInput.focus();
             return;
         }
-        
         try {
-            const res = await fetch(`/api/usluge/${id}`, {
+            const res = await fetch('/api/usluge/' + id, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cena: novaCena })
             });
-            
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.poruka || 'Greška pri ažuriranju');
-            }
-            
-            alert('✅ Cena uspešno ažurirana na ' + novaCena + ' RSD');
+            if (!res.ok) throw new Error('Greška pri ažuriranju');
+            alert('✅ Cena uspešno izmenjena!');
             ucitajUslugeAdmin();
-            
         } catch (error) {
             alert('❌ Greška: ' + error.message);
         }
     }
 
     async function obrisiUslugu(id) {
-        let ime = 'uslugu';
+        if (!confirm('⚠️ Da li ste sigurni da želite da obrišete ovu uslugu?')) return;
         try {
-            const res = await fetch('/api/usluge');
-            const usluge = await res.json();
-            const usluga = usluge.find(u => u.id === id);
-            if (usluga) ime = usluga.ime;
-        } catch (e) {}
-        
-        if (!confirm(`⚠️ Da li ste sigurni da želite da obrišete "${ime}"?`)) {
-            return;
-        }
-        
-        try {
-            const res = await fetch(`/api/usluge/${id}`, {
-                method: 'DELETE'
-            });
-            
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.poruka || 'Greška pri brisanju');
-            }
-            
-            alert('✅ Usluga "' + ime + '" uspešno obrisana!');
+            const res = await fetch('/api/usluge/' + id, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Greška pri brisanju');
             ucitajUslugeAdmin();
-            
         } catch (error) {
             alert('❌ Greška: ' + error.message);
         }
     }
 
-    // ============================================
-    // POKRENI
-    // ============================================
-    
-    console.log('🚀 Admin panel se učitava...');
     ucitajNedelju();
     ucitajUslugeAdmin();
     </script>
