@@ -91,10 +91,10 @@ def api_slotovi(datum):
     zauzeti = {row['vreme']: row['status'] for row in c.fetchall()}
     conn.close()
 
-    # Generišemo standardne radne termine od 09:00 do 17:00 na 30 min
+    # Generišemo standardne radne termine od 09:00 do 20:00 na 30 min
     svi_slotovi = []
     start = datetime.strptime("09:00", "%H:%M")
-    end = datetime.strptime("19:30", "%H:%M")
+    end = datetime.strptime("20:00", "%H:%M")
     
     while start < end:
         vreme_str = start.strftime("%H:%M")
