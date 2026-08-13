@@ -82,3 +82,34 @@ def zakazi_termin(datum, vreme, ime, telefon, usluga, cena):
     conn.commit()
     conn.close()
     return True
+    def get_sve_usluge():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, ime, cena, trajanje FROM usluge")
+    rows = c.fetchall()
+    conn.close()
+    return [{"id": r[0], "ime": r[1], "cena": r[2], "trajanje": r[3]} for r in rows]
+
+def dodaj_uslugu(ime, cena, trajanje=30):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
+    conn.commit()
+    conn.close()
+    return True
+
+def azuriraj_uslugu(usluga_id, nova_cena):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE usluge SET cena=? WHERE id=?", (nova_cena, usluga_id))
+    conn.commit()
+    conn.close()
+    return True
+
+def obrisi_uslugu(usluga_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM usluge WHERE id=?", (usluga_id,))
+    conn.commit()
+    conn.close()
+    return True
