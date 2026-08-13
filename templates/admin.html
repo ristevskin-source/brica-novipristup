@@ -261,23 +261,85 @@
             const uslugaVal = document.getElementById('adminUsluga').value.split('|');
             const usluga = uslugaVal[0];
             const cena = parseInt(uslugaVal[1]);
-
+        
             const res = await fetch('/api/zakazi', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ datum, vreme, ime, telefon, usluga, cena })
+                body: JSON.stringify({datum, vreme, ime, telefon, usluga, cena})
             });
-
             const data = await res.json();
-            if(data.status === 'ok') {
+            if (data.status === 'ok') {
                 zatvoriNovoZakazivanje();
                 ucitajNedelju();
-            } else {
-                alert(data.poruka || 'Greška prilikom zakazivanja.');
             }
         }
-
-        postaviDanas();
-    </script>
-</body>
-</html>
+        
+        async function ucitajUslugeAdmin() {
+            let res = await fetch('/api/usluge');
+            let usluge = await res.json();
+            let lista = document.getElementById('listaUslugaAdmin');
+            if(!lista) return;
+            lista.innerHTML = '';
+            usluge.forEach(u => {
+                lista.innerHTML += `
+                    <li style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border-bottom: 1px solid #ccc;">
+                        <span><b>${u.ime}</b></span>
+                        <div style="display:flex; gap: 8px; align-items:center;">
+                            <input type="number" id="cena-${u.id}" value="${u.cena}" style="width: 80px; padding: 4px;">
+                            <button onclick="sacuvajCenu(${u.id})" style="background: #0d6efd; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Sačuvaj</button>
+                            <button onclick="obrisiUslugu(${u.id})" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">✕</button>
+                        </div>
+                    </li>
+                `;
+            });
+        }
+        
+        async function dodajNovuUslugu() {
+            let ime = document.getElementById('novoIme').value;
+            let cena = document.getElementById('novaCena').value;
+            if(!ime || !cena) return alert('Unesite naziv i cenu!');
+            
+            await fetch('/api/usluge', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ime: ime, cena: parseInt(cena), trajanje: 30})
+            });
+            document.getElementById('novoIme').value = '';
+            document.getElementById('novaCena').value = '';
+            ucitajUslugeAdmin();
+        }
+        
+        async function sacuvajCenu(id) {
+            let novaCena = document.getElementById(`cena-${id}`).value;
+            await fetch(`/api/usluge/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({cena: parseInt(novaCena)})
+            });
+            alert('Cena uspešno izmenjena!');
+            ucitajUslugeAdmin();
+        }
+        
+        async function obrisiUslugu(id) {
+            if(confirm('Da li ste sigurni da želite da obrišete ovu uslugu?')) {
+                await fetch(`/api/usluge/${id}`, { method: 'DELETE' });
+                ucitajUslugeAdmin();
+            }
+        }
+        
+        ucitajUslugeAdmin();
+        </script>
+        
+        <!-- Sekcija za upravljanje uslugama i cenama -->
+        <div style="margin: 20px auto; max-width: 800px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #000;">
+            <h3>Upravljanje uslugama i cenama</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="novoIme" placeholder="Naziv usluge" style="flex: 2; padding: 6px;">
+                <input type="number" id="novaCena" placeholder="Cena (RSD)" style="flex: 1; padding: 6px;">
+                <button onclick="dodajNovuUslugu()" style="background: #198754; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">+ Dodaj</button>
+            </div>
+            <ul id="listaUslugaAdmin" style="list-style: none; padding: 0;"></ul>
+        </div>
+        
+        </body>
+        </html>
