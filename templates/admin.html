@@ -184,6 +184,7 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, telefon: telefon, usluga: usluga, cena: cena })
         });
+        });
         const data = await res.json();
         if(data.status === 'ok') {
             zatvoriNovoZakazivanje();
