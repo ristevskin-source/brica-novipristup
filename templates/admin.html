@@ -163,7 +163,7 @@
         let res = await fetch('/api/usluge');
         let usluge = await res.json();
         let select = document.getElementById('adminUsluga');
-        select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>').join('');
+        select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>')
         document.getElementById('novaRezervacijaModal').classList.remove('hidden');
     }
 
