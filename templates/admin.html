@@ -173,6 +173,7 @@
 
     async function sacuvajAdminZakazivanje() {
         const datum = document.getElementById('adminDatum').value;
+        const vreme = document.getElementById('adminVreme').value; // 
         const ime = document.getElementById('adminIme').value;
         const telefon = document.getElementById('adminTel').value;
         const uslugaVal = document.getElementById('adminUsluga').value.split('|');
@@ -183,7 +184,6 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, telefon: telefon, usluga: usluga, cena: cena })
-        });
         });
         const data = await res.json();
         if(data.status === 'ok') {
