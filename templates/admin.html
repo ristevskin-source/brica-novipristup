@@ -3,219 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Paneli - Frizerski Salon</title>
+    <title>Admin Panel - Brica</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .gold-bg { background-color: #d4af37; }
-        .gold-text { color: #d4af37; }
-        .sticky-col { position: sticky; left: 0; background-color: #18181b; z-index: 10; }
-    </style>
 </head>
-<body class="bg-zinc-900 text-zinc-100 min-h-screen p-2 md:p-6">
+<body class="bg-zinc-900 text-white min-h-screen p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto space-y-6">
-        <!-- ZAGLAVLJE -->
-        <div class="flex flex-wrap justify-between items-center gap-4 bg-zinc-800 p-4 rounded-xl border border-zinc-700">
-            <h1 class="text-xl font-bold gold-text">💈 Admin Raspored</h1>
-            
-            <div class="flex items-center gap-2">
-                <button onclick="pomeriNedelju(-7)" class="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-sm">◀ Pret.</button>
-                <button onclick="postaviDanas()" class="px-3 py-1 gold-bg text-black font-semibold rounded text-sm">Danas</button>
-                <button onclick="pomeriNedelju(7)" class="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-sm">Sled. ▶</button>
-                <input type="date" id="startDatum" class="bg-zinc-900 text-white p-1 rounded border border-zinc-700 text-sm">
-            </div>
+    <div class="max-w-6xl mx-auto">
+        <!-- Zaglavlje -->
+        <div class="flex justify-between items-center mb-8 border-b border-zinc-700 pb-4">
+            <h1 class="text-3xl font-bold text-amber-500">💈 Admin Panel - Brica</h1>
+            <a href="/" class="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold text-sm">Nazad na sajt</a>
         </div>
 
-        <!-- TABELA RASPOREDA -->
-        <div class="overflow-x-auto rounded-xl border border-zinc-700 bg-zinc-900">
-            <table class="w-full text-center border-collapse">
-                <thead>
-                    <tr id="zaglavljeDana" class="bg-zinc-800 gold-text text-xs"></tr>
+        <!-- Navigacija za nedelje -->
+        <div class="flex justify-between items-center bg-zinc-800 p-4 rounded-lg mb-6 border border-zinc-700">
+            <button onclick="promeniNedelju(-1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">← Prethodna nedelja</button>
+            <span id="rasponNedelje" class="text-lg font-bold text-zinc-300"></span>
+            <button onclick="promeniNedelju(1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">Sledeća nedelja →</button>
+        </div>
+
+        <!-- Tabela rasporeda -->
+        <div class="overflow-x-auto bg-zinc-800 rounded-lg border border-zinc-700 mb-8">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-zinc-700 text-amber-500 uppercase font-bold text-center">
+                    <tr id="zaglavljeTabele">
+                        <th class="p-3 border-b border-zinc-600">Vreme</th>
+                        <!-- Dani se generišu dinamički -->
+                    </tr>
                 </thead>
-                <tbody id="tabelaMreza"></tbody>
+                <tbody id="teloTabele" class="divide-y divide-zinc-700 text-center">
+                    <!-- Slotovi se generišu dinamički -->
+                </tbody>
             </table>
         </div>
 
-        <!-- UPRAVLJANJE USLUGAMA I CENAMA -->
-        <div class="bg-zinc-800 p-4 rounded-xl border border-zinc-700 space-y-4">
-            <h3 class="text-lg font-bold gold-text">✂️ Upravljanje uslugama i cenama</h3>
-            <div class="flex flex-wrap gap-2">
-                <input type="text" id="novoIme" placeholder="Naziv usluge" class="flex-1 bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-sm">
-                <input type="number" id="novaCena" placeholder="Cena (RSD)" class="w-32 bg-zinc-900 border border-zinc-700 p-2 rounded text-white text-sm">
-                <button onclick="dodajNovuUslugu()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-sm font-bold">+ Dodaj</button>
-            </div>
-            <ul id="listaUslugaAdmin" class="divide-y divide-zinc-700 text-sm"></ul>
-        </div>
-    </div>
-
-    <!-- MODAL DETALJI TERMINA -->
-    <div id="detaljiModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-800 border border-zinc-700 p-5 rounded-xl max-w-sm w-full space-y-4">
-            <h3 id="modalNaslov" class="font-bold text-lg gold-text">Detalji termina</h3>
-            <div id="modalSadrzaj" class="space-y-2 text-sm text-zinc-300"></div>
-            <div class="flex gap-2">
-                <button onclick="zatvoriDetalje()" class="w-1/2 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-bold">Zatvori</button>
-                <button id="otkaziDugme" class="w-1/2 py-2 bg-red-800 hover:bg-red-700 text-white rounded text-xs font-bold">Otkazi termin</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL NOVO ZAKAZIVANJE -->
-    <div id="novaRezervacijaModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-800 border border-zinc-700 p-5 rounded-xl max-w-sm w-full space-y-4">
-            <h3 class="font-bold text-lg gold-text">Novo zakazivanje</h3>
-            <p id="infoPrikaz" class="text-xs text-zinc-400"></p>
-            <input type="hidden" id="adminDatum">
-            <input type="hidden" id="adminVreme">
+        <!-- Sekcija za upravljanje uslugama -->
+        <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700">
+            <h2 class="text-xl font-bold text-amber-500 mb-4">Upravljanje uslugama i cenama</h2>
             
-            <div class="space-y-3">
-                <input type="text" id="adminIme" placeholder="Ime klijenta" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-white">
-                <input type="text" id="adminTel" placeholder="Broj telefona" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-white">
-                <select id="adminUsluga" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm text-white"></select>
-            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Forma za dodavanje -->
+                <div>
+                    <h3 class="text-md font-semibold text-zinc-300 mb-3">Dodaj novu uslugu</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="novoIme" placeholder="Naziv usluge (npr. Šišanje)" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                        <input type="number" id="novaCena" placeholder="Cena u RSD" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                        <input type="number" id="novoTrajanje" placeholder="Trajanje u minutima (npr. 30)" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white" value="30">
+                        <button onclick="dodajNovuUslugu()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2 rounded">Dodaj uslugu</button>
+                    </div>
+                </div>
 
-            <div class="flex gap-2">
-                <button onclick="zatvoriNovoZakazivanje()" class="w-1/2 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-xs">Odustani</button>
-                <button onclick="sacuvajAdminZakazivanje()" class="w-1/2 py-2 gold-bg text-black font-bold rounded text-xs">Sačuvaj</button>
+                <!-- Lista postojećih usluga -->
+                <div>
+                    <h3 class="text-md font-semibold text-zinc-300 mb-3">Postojeće usluge</h3>
+                    <ul id="listaUslugaAdmin" class="space-y-2">
+                        <!-- Generiše se dinamički -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal za ručno zakazivanje -->
+    <div id="novaRezervacijaModal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
+        <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700 w-full max-w-md">
+            <h3 class="text-lg font-bold text-amber-500 mb-4">Zakazivanje termina</h3>
+            <div class="space-y-3">
+                <input type="hidden" id="adminDatum">
+                <input type="hidden" id="adminVreme">
+                <div>
+                    <label class="text-xs text-zinc-400">Ime klijenta:</label>
+                    <input type="text" id="adminIme" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Telefon:</label>
+                    <input type="text" id="adminTel" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Usluga:</label>
+                    <select id="adminUsluga" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white"></select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="sacuvajAdminZakazivanje()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2 rounded">Potvrdi</button>
+                    <button onclick="zatvoriNovoZakazivanje()" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded">Otkaži</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-    let trenutniPocetniDatum = new Date();
-    const sati = [
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-        "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-        "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-        "18:00", "18:30", "19:00", "19:30"
-    ];
+    let trenutniPonedeljak = getPonedeljak(new Date());
 
-    const startDatumEl = document.getElementById('startDatum');
-
-    function formatDate(date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+    function getPonedeljak(d) {
+        d = new Date(d);
+        let day = d.getDay(),
+            diff = d.getDate() - day + (day == 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
     }
 
-    function postaviDanas() {
-        trenutniPocetniDatum = new Date();
-        if(startDatumEl) startDatumEl.value = formatDate(trenutniPocetniDatum);
+    function formatirajDatum(d) {
+        return d.toISOString().split('T')[0];
+    }
+
+    function promeniNedelju(smer) {
+        trenutniPonedeljak.setDate(trenutniPonedeljak.getDate() + (smer * 7));
         ucitajNedelju();
-    }
-
-    function pomeriNedelju(dani) {
-        trenutniPocetniDatum.setDate(trenutniPocetniDatum.getDate() + dani);
-        if(startDatumEl) startDatumEl.value = formatDate(trenutniPocetniDatum);
-        ucitajNedelju();
-    }
-
-    if(startDatumEl) {
-        startDatumEl.addEventListener('change', (e) => {
-            if (e.target.value) {
-                trenutniPocetniDatum = new Date(e.target.value);
-                ucitajNedelju();
-            }
-        });
     }
 
     async function ucitajNedelju() {
-        try {
-            const dani = [];
-            const datumHeaders = [];
-            for(let i = 0; i < 7; i++) {
-                const d = new Date(trenutniPocetniDatum);
-                d.setDate(d.getDate() + i);
-                const dStr = formatDate(d);
-                dani.push(dStr);
-                const nazivDana = d.toLocaleDateString('sr-RS', { weekday: 'short', day: 'numeric', month: 'numeric' });
-                datumHeaders.push({ str: dStr, naziv: nazivDana });
-            }
-
-            const headerRow = document.getElementById('zaglavljeDana');
-            if(headerRow) {
-                headerRow.innerHTML = `<th class="p-2 border border-zinc-700 w-16 sticky-col">Vreme</th>` + 
-                    datumHeaders.map(dh => `<th class="p-1 border border-zinc-700 text-[11px]">${dh.naziv}</th>`).join('');
-            }
-
-            const podaciPoDanima = {};
-            for(let dStr of dani) {
-                try {
-                    const res = await fetch(`/api/slotovi/${dStr}`);
-                    podaciPoDanima[dStr] = await res.json();
-                } catch (e) {
-                    podaciPoDanima[dStr] = [];
-                }
-            }
-
-            const tabelaMreza = document.getElementById('tabelaMreza');
-            if(tabelaMreza) {
-                tabelaMreza.innerHTML = sati.map(vreme => {
-                    let red = `<tr class="border-b border-zinc-800">`;
-                    red += `<td class="p-1 font-bold gold-text border-r border-zinc-800 sticky-col text-[11px]">${vreme}</td>`;
-                    dani.forEach(dStr => {
-                        const slotovi = podaciPoDanima[dStr] || [];
-                        const slot = Array.isArray(slotovi) ? slotovi.find(s => s.vreme === vreme) : null;
-                        if (vreme >= "13:00" && vreme < "14:00") {
-                            red += `<td class="p-1 border border-zinc-800/50 bg-zinc-950/40 text-red-500/50 font-semibold text-[10px]">PAUZA</td>`;
-                        } else if (slot && slot.status === 'zakazan') {
-                            red += `<td class="p-0.5 border border-zinc-800">
-                                <button onclick="prikaziDetalje('${dStr}', '${vreme}', '${slot.ime || 'Klijent'}', '${slot.telefon || ''}', '${slot.usluga || ''}', ${slot.cena || 0})" class="w-full py-1.5 px-0.5 bg-red-950/80 border border-red-700 hover:bg-red-900 text-red-200 rounded font-bold text-[10px] truncate block">
-                                    ✂️ ${slot.ime || 'Zakazano'}
-                                </button>
-                            </td>`;
-                        } else {
-                            red += `<td class="p-0.5 border border-zinc-800">
-                                <button onclick="otvoriNovoZakazivanje('${dStr}', '${vreme}')" class="w-full py-1.5 px-0.5 bg-emerald-950/40 hover:bg-emerald-800/60 border border-emerald-800/50 hover:border-emerald-500 text-emerald-400 rounded text-[10px] font-medium transition block">
-                                    + Slobodno
-                                </button>
-                            </td>`;
-                        }
-                    });
-                    red += `</tr>`;
-                    return red;
-                }).join('');
-            }
-        } catch (err) {
-            console.error(err);
+        let dani = [];
+        let imenaDana = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+        
+        let headerRow = '<th class="p-3 border-b border-zinc-600">Vreme</th>';
+        for(let i=0; i<6; i++) {
+            let d = new Date(trenutniPonedeljak);
+            d.setDate(d.getDate() + i);
+            let dStr = formatirajDatum(d);
+            dani.push(dStr);
+            headerRow += `<th class="p-3 border-b border-zinc-600">${imenaDana[i]}<br><span class="text-xs text-zinc-400">${dStr.split('-').slice(1).join('.')}</span></th>`;
         }
+        document.getElementById('zaglavljeTabele').innerHTML = headerRow;
+
+        let prviDan = dani[0];
+        let poslednjiDan = dani[5];
+        document.getElementById('rasponNedelje').innerText = `${prviDan} do ${poslednjiDan}`;
+
+        let res = await fetch(`/api/raspored_nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+        let podaci = await res.json();
+
+        let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
+        
+        let tbody = '';
+        sati.forEach(vreme => {
+            tbody += `<tr><td class="p-2 font-bold text-amber-500 border-r border-zinc-700">${vreme}</td>`;
+            dani.forEach(datum => {
+                let klijent = podaci[datum] && podaci[datum][vreme] ? podaci[datum][vreme] : null;
+                if(klijent && klijent.status === 'zauzet') {
+                    tbody += `
+                        <td class="p-2 border border-zinc-700 bg-red-900/40 text-red-200">
+                            <div class="font-bold text-xs">${klijent.ime || 'Zauzeto'}</div>
+                            <div class="text-[10px] text-zinc-400">${klijent.usluga || ''} (${klijent.cena || 0} RSD)</div>
+                            <button onclick="oslobodiTermin('${datum}', '${vreme}')" class="mt-1 bg-red-800 hover:bg-red-700 text-white text-[10px] px-2 py-0.5 rounded">Oslobodi</button>
+                        </td>`;
+                } else {
+                    tbody += `
+                        <td class="p-2 border border-zinc-700 hover:bg-zinc-700/50 cursor-pointer" onclick="otvoriZakazivanje('${datum}', '${vreme}')">
+                            <span class="text-xs text-zinc-500">+ Zakazi</span>
+                        </td>`;
+                }
+            });
+            tbody += `</tr>`;
+        });
+        document.getElementById('teloTabele').innerHTML = tbody;
     }
 
-    function prikaziDetalje(datum, vreme, ime, telefon, usluga, cena) {
-        document.getElementById('modalNaslov').innerText = `Termin: ${vreme} h (${datum})`;
-        document.getElementById('modalSadrzaj').innerHTML = `
-            <p><strong>Klijent:</strong> ${ime}</p>
-            <p><strong>Telefon:</strong> <a href="tel:${telefon}" class="text-blue-400 underline">${telefon}</a></p>
-            <p><strong>Usluga:</strong> ${usluga}</p>
-            <p><strong>Cena:</strong> ${cena} RSD</p>
-        `;
-        const otkaziBtn = document.getElementById('otkaziDugme');
-        otkaziBtn.onclick = async () => {
-            if(!confirm(`Sigurno otkazujete termin u ${vreme}?`)) return;
+    async function oslobodiTermin(datum, vreme) {
+        if(confirm(`Da li otkazujete termin ${datum} u ${vreme}?`)) {
             await fetch('/api/otkazi', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ datum, vreme })
+                body: JSON.stringify({datum, vreme})
             });
-            zatvoriDetalje();
             ucitajNedelju();
-        };
-        document.getElementById('detaljiModal').classList.remove('hidden');
+        }
     }
 
-    function zatvoriDetalje() {
-        document.getElementById('detaljiModal').classList.add('hidden');
-    }
-
-    async function otvoriNovoZakazivanje(datum, vreme) {
+    async function otvoriZakazivanje(datum, vreme) {
         document.getElementById('adminDatum').value = datum;
         document.getElementById('adminVreme').value = vreme;
-        document.getElementById('infoPrikaz').innerText = `Termin: ${datum} u ${vreme} h`;
         document.getElementById('adminIme').value = '';
         document.getElementById('adminTel').value = '';
 
-        // Učitaj usluge u padajući meni
         let res = await fetch('/api/usluge');
         let usluge = await res.json();
         let select = document.getElementById('adminUsluga');
@@ -240,12 +198,14 @@
         const res = await fetch('/api/zakazi', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({datum, vreme, ime, telefon, usluga, cena})
+            body: JSON.stringify({ datum, vreme, ime, telefon, usluga, cena })
         });
         const data = await res.json();
-        if (data.status === 'ok') {
+        if(data.status === 'ok') {
             zatvoriNovoZakazivanje();
             ucitajNedelju();
+        } else {
+            alert(data.poruka || 'Greška pri zakazivanju!');
         }
     }
 
@@ -258,10 +218,10 @@
         usluge.forEach(u => {
             lista.innerHTML += `
                 <li class="flex justify-between items-center py-2 border-b border-zinc-700">
-                    <span class="font-semibold text-zinc-200">${u.ime}</span>
+                    <span class="font-semibold text-zinc-200">${u.ime} (${u.trajanje || 30} min)</span>
                     <div class="flex gap-2 items-center">
                         <input type="number" id="cena-${u.id}" value="${u.cena}" class="w-20 p-1 text-black text-center rounded font-bold">
-                        <button onclick="sacuvajCenu(${u.id})" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-bold text-xs">Sačuvaj</button>
+                        <button onclick="sacuvajCenu(${u.id}, '${u.ime}', ${u.trajanje || 30})" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-bold text-xs">Sačuvaj</button>
                         <button onclick="obrisiUslugu(${u.id})" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded font-bold text-xs">✕</button>
                     </div>
                 </li>
@@ -272,24 +232,34 @@
     async function dodajNovuUslugu() {
         let ime = document.getElementById('novoIme').value;
         let cena = document.getElementById('novaCena').value;
+        let trajanje = document.getElementById('novoTrajanje') ? document.getElementById('novoTrajanje').value : 30;
+        
         if(!ime || !cena) return alert('Unesite naziv i cenu!');
         
         await fetch('/api/usluge', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ime: ime, cena: parseInt(cena), trajanje: 30})
+            body: JSON.stringify({
+                ime: ime, 
+                cena: parseInt(cena), 
+                trajanje: parseInt(trajanje) || 30
+            })
         });
         document.getElementById('novoIme').value = '';
         document.getElementById('novaCena').value = '';
         ucitajUslugeAdmin();
     }
 
-    async function sacuvajCenu(id) {
+    async function sacuvajCenu(id, ime, trajanje) {
         let novaCena = document.getElementById(`cena-${id}`).value;
         await fetch(`/api/usluge/${id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({cena: parseInt(novaCena)})
+            body: JSON.stringify({
+                ime: ime,
+                cena: parseInt(novaCena),
+                trajanje: parseInt(trajanje) || 30
+            })
         });
         alert('Cena uspešno izmenjena!');
         ucitajUslugeAdmin();
@@ -302,7 +272,7 @@
         }
     }
 
-    postaviDanas();
+    ucitajNedelju();
     ucitajUslugeAdmin();
     </script>
 </body>
