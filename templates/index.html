@@ -119,10 +119,11 @@
             if(!izabraniDatum) return;
             try {
                 const res = await fetch(`/api/slotovi/${izabraniDatum}`);
-                const slotovi = await res.json();
-                const container = document.getElementById('mrezaSlotova');
+                const data = await res.json();
+                const slotovi = Array.isArray(data) ? data : (data.slotovi || []);
                 
-                if (!Array.isArray(slotovi) || slotovi.length === 0) {
+                const container = document.getElementById('mrezaSlotova');
+                if (!slotovi || slotovi.length === 0) {
                     container.innerHTML = '<p class="col-span-4 text-xs text-gray-400 text-center">Nema dostupnih slotova.</p>';
                     return;
                 }
@@ -136,8 +137,8 @@
                         return `<div class="p-2 bg-zinc-950 border border-zinc-900 rounded text-xs text-zinc-600 text-center line-through">${s.vreme}</div>`;
                     }
                 }).join('');
-            } catch (e) {
-                console.error("Greška pri učitavanju slotova:", e);
+            } catch(e) {
+                console.error("Greška slotovi:", e);
             }
         }
 
