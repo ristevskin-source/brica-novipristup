@@ -83,24 +83,29 @@ def index():
 def admin():
     return render_template('admin.html')
 
-@app.route('/api/usluge', methods=['GET', 'POST'])
-def api_usluge():
+@app.route('/api/slotovi/<datum>', methods=['GET'])
+def api_slotovi(datum):
     conn = get_connection()
     c = conn.cursor()
-    if request.method == 'GET':
-        c.execute("SELECT * FROM usluge")
-        usluge = [dict(row) for row in c.fetchall()]
-        conn.close()
-        return jsonify(usluge)
-    elif request.method == 'POST':
-        data = request.get_json()
-        ime = data.get('ime')
-        cena = data.get('cena')
-        trajanje = data.get('trajanje', 30)
-        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'ok'})
+    c.execute("SELECT vreme, status FROM rezervacije WHERE datum = ?", (datum,))
+    zauzeti = {row['vreme']: row['status'] for row in c.fetchall()}
+    conn.close()
+
+    # Generišemo standardne radne termine od 09:00 do 17:00 na 30 min
+    svi_slotovi = []
+    start = datetime.strptime("09:00", "%H:%M")
+    end = datetime.strptime("17:00", "%H:%M")
+    
+    while start < end:
+        vreme_str = start.strftime("%H:%M")
+        status = zauzeti.get(vreme_str, 'slobodan')
+        svi_slotovi.append({
+            'vreme': vreme_str,
+            'status': status
+        })
+        start += timedelta(minutes=30)
+
+    return jsonify(svi_slotovi)
 
 @app.route('/api/usluge/<int:id>', methods=['PUT', 'DELETE'])
 def api_usluge_id(id):
