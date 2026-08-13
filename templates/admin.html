@@ -5,45 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Brica</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            z-index: 9999;
-            animation: slideUp 0.3s ease;
-        }
-        .toast-success { background: #10b981; }
-        .toast-error { background: #ef4444; }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .service-item:hover {
-            background: rgba(255,255,255,0.05);
-        }
-    </style>
 </head>
 <body class="bg-zinc-900 text-white min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <!-- Zaglavlje -->
         <div class="flex justify-between items-center mb-8 border-b border-zinc-700 pb-4">
             <h1 class="text-3xl font-bold text-amber-500">💈 Admin Panel - Brica</h1>
             <a href="/" class="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold text-sm">Nazad na sajt</a>
         </div>
 
-        <!-- Navigacija za nedelje -->
         <div class="flex justify-between items-center bg-zinc-800 p-4 rounded-lg mb-6 border border-zinc-700">
             <button onclick="promeniNedelju(-1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">← Prethodna nedelja</button>
             <span id="rasponNedelje" class="text-lg font-bold text-zinc-300"></span>
             <button onclick="promeniNedelju(1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">Sledeća nedelja →</button>
         </div>
 
-        <!-- Tabela rasporeda -->
         <div class="overflow-x-auto bg-zinc-800 rounded-lg border border-zinc-700 mb-8">
             <table class="w-full text-left text-sm">
                 <thead class="bg-zinc-700 text-amber-500 uppercase font-bold text-center">
@@ -56,21 +31,19 @@
             </table>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SEKCIJA ZA UPRAVLJANJE USLUGAMA - SA DUGMADIMA -->
-        <!-- ============================================ -->
+        <!-- UPRAVLJANJE USLUGAMA -->
         <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700">
             <h2 class="text-xl font-bold text-amber-500 mb-4">📋 Upravljanje uslugama i cenama</h2>
             
-            <!-- RED ZA DODAVANJE - OVDE SU DUGMAD -->
+            <!-- RED ZA DODAVANJE -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-                <input type="text" id="novoIme" 
+                <input type="text" id="novoIme" name="novoIme"
                        placeholder="Naziv usluge" 
                        class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
-                <input type="number" id="novaCena" 
+                <input type="number" id="novaCena" name="novaCena"
                        placeholder="Cena u RSD" 
                        class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
-                <input type="number" id="novoTrajanje" 
+                <input type="number" id="novoTrajanje" name="novoTrajanje"
                        placeholder="Trajanje (min)" value="30"
                        class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:border-amber-500 focus:outline-none">
                 <button onclick="dodajNovuUslugu()" 
@@ -79,7 +52,7 @@
                 </button>
             </div>
             
-            <!-- LISTA USLUGA - OVDE SE PRIKAZUJU DUGMAD ZA IZMENU -->
+            <!-- LISTA USLUGA -->
             <div id="listaUslugaAdmin" class="space-y-2">
                 <div class="text-center py-4 text-zinc-500">⏳ Učitavanje usluga...</div>
             </div>
@@ -91,19 +64,19 @@
         <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700 w-full max-w-md">
             <h3 class="text-lg font-bold text-amber-500 mb-4">Zakazivanje termina</h3>
             <div class="space-y-3">
-                <input type="hidden" id="adminDatum">
-                <input type="hidden" id="adminVreme">
+                <input type="hidden" id="adminDatum" name="adminDatum">
+                <input type="hidden" id="adminVreme" name="adminVreme">
                 <div>
                     <label class="text-xs text-zinc-400">Ime klijenta:</label>
-                    <input type="text" id="adminIme" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                    <input type="text" id="adminIme" name="adminIme" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
                 </div>
                 <div>
                     <label class="text-xs text-zinc-400">Telefon:</label>
-                    <input type="text" id="adminTel" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
+                    <input type="text" id="adminTel" name="adminTel" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
                 </div>
                 <div>
                     <label class="text-xs text-zinc-400">Usluga:</label>
-                    <select id="adminUsluga" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white"></select>
+                    <select id="adminUsluga" name="adminUsluga" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white"></select>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button onclick="sacuvajAdminZakazivanje()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2 rounded">Potvrdi</button>
@@ -115,7 +88,7 @@
 
     <script>
     // ============================================
-    // RASPORED - POSTOJEĆE FUNKCIJE
+    // RASPORED
     // ============================================
     
     let trenutniPonedeljak = getPonedeljak(new Date());
@@ -178,7 +151,7 @@
             });
             document.getElementById('teloTabele').innerHTML = tbody;
         } catch (error) {
-            console.error('Greška pri učitavanju rasporeda:', error);
+            console.error('Greška:', error);
         }
     }
 
@@ -233,17 +206,26 @@
     }
 
     // ============================================
-    // UPRAVLJANJE USLUGAMA - POPRAVLJENE FUNKCIJE
+    // UPRAVLJANJE USLUGAMA
     // ============================================
 
     async function ucitajUslugeAdmin() {
         const container = document.getElementById('listaUslugaAdmin');
+        if (!container) {
+            console.error('Element listaUslugaAdmin nije pronađen!');
+            return;
+        }
         
         try {
+            console.log('🔄 Učitavanje usluga...');
             const res = await fetch('/api/usluge');
-            if (!res.ok) throw new Error('Greška pri učitavanju');
+            
+            if (!res.ok) {
+                throw new Error('HTTP greška: ' + res.status);
+            }
             
             const usluge = await res.json();
+            console.log('✅ Usluge učitane:', usluge);
             
             if (usluge.length === 0) {
                 container.innerHTML = `
@@ -256,16 +238,17 @@
             }
             
             container.innerHTML = usluge.map(u => `
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-3 bg-zinc-900/50 rounded-lg border border-zinc-700">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 p-3 bg-zinc-900/50 rounded-lg border border-zinc-700 hover:border-amber-500/50 transition">
                     <div class="flex-1">
                         <span class="font-semibold text-zinc-200">${u.ime}</span>
                         <span class="text-xs ml-2 px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full">${u.trajanje || 30} min</span>
                     </div>
-                    <div class="flex items-center gap-2 w-full md:w-auto">
+                    <div class="flex items-center gap-2">
                         <div class="flex items-center gap-1 bg-zinc-800 rounded-lg px-2 py-1">
                             <span class="text-xs text-zinc-400">RSD</span>
                             <input type="number" 
                                    id="cena-${u.id}" 
+                                   name="cena-${u.id}"
                                    value="${u.cena}" 
                                    min="0" 
                                    step="50"
@@ -284,12 +267,13 @@
             `).join('');
             
         } catch (error) {
-            console.error('Greška:', error);
+            console.error('❌ Greška:', error);
             container.innerHTML = `
                 <div class="text-center py-4 text-red-500 border border-red-500/30 rounded-lg">
                     <p>❌ Greška pri učitavanju usluga</p>
+                    <p class="text-xs mt-1">${error.message}</p>
                     <button onclick="ucitajUslugeAdmin()" class="mt-2 text-xs text-amber-400 hover:underline">
-                        Pokušaj ponovo
+                        🔄 Pokušaj ponovo
                     </button>
                 </div>
             `;
@@ -297,19 +281,23 @@
     }
 
     async function dodajNovuUslugu() {
-        const ime = document.getElementById('novoIme').value.trim();
-        const cena = document.getElementById('novaCena').value.trim();
-        const trajanje = document.getElementById('novoTrajanje').value.trim();
+        const imeInput = document.getElementById('novoIme');
+        const cenaInput = document.getElementById('novaCena');
+        const trajanjeInput = document.getElementById('novoTrajanje');
+        
+        const ime = imeInput.value.trim();
+        const cena = cenaInput.value.trim();
+        const trajanje = trajanjeInput.value.trim() || 30;
         
         if (!ime) {
             alert('⚠️ Unesite naziv usluge!');
-            document.getElementById('novoIme').focus();
+            imeInput.focus();
             return;
         }
         
         if (!cena || parseInt(cena) <= 0) {
             alert('⚠️ Unesite ispravnu cenu!');
-            document.getElementById('novaCena').focus();
+            cenaInput.focus();
             return;
         }
         
@@ -319,7 +307,7 @@
         dugme.disabled = true;
         
         try {
-            const response = await fetch('/api/usluge', {
+            const res = await fetch('/api/usluge', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -327,19 +315,18 @@
                 body: JSON.stringify({
                     ime: ime,
                     cena: parseInt(cena),
-                    trajanje: parseInt(trajanje) || 30
+                    trajanje: parseInt(trajanje)
                 })
             });
             
-            if (!response.ok) {
-                const error = await response.json();
+            if (!res.ok) {
+                const error = await res.json();
                 throw new Error(error.poruka || 'Greška pri dodavanju');
             }
             
-            // Očisti polja
-            document.getElementById('novoIme').value = '';
-            document.getElementById('novaCena').value = '';
-            document.getElementById('novoTrajanje').value = '30';
+            imeInput.value = '';
+            cenaInput.value = '';
+            trajanjeInput.value = '30';
             
             alert('✅ Usluga "' + ime + '" uspešno dodata!');
             ucitajUslugeAdmin();
@@ -363,7 +350,7 @@
         }
         
         try {
-            const response = await fetch('/api/usluge/' + id, {
+            const res = await fetch(`/api/usluge/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -371,8 +358,8 @@
                 body: JSON.stringify({ cena: novaCena })
             });
             
-            if (!response.ok) {
-                const error = await response.json();
+            if (!res.ok) {
+                const error = await res.json();
                 throw new Error(error.poruka || 'Greška pri ažuriranju');
             }
             
@@ -385,7 +372,6 @@
     }
 
     async function obrisiUslugu(id) {
-        // Dohvati ime usluge za prikaz
         let ime = 'uslugu';
         try {
             const res = await fetch('/api/usluge');
@@ -399,12 +385,12 @@
         }
         
         try {
-            const response = await fetch('/api/usluge/' + id, {
+            const res = await fetch(`/api/usluge/${id}`, {
                 method: 'DELETE'
             });
             
-            if (!response.ok) {
-                const error = await response.json();
+            if (!res.ok) {
+                const error = await res.json();
                 throw new Error(error.poruka || 'Greška pri brisanju');
             }
             
@@ -417,9 +403,10 @@
     }
 
     // ============================================
-    // INICIJALIZACIJA
+    // POKRENI
     // ============================================
-
+    
+    console.log('🚀 Admin panel se učitava...');
     ucitajNedelju();
     ucitajUslugeAdmin();
     </script>
