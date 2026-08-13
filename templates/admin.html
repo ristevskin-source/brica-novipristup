@@ -215,12 +215,11 @@
         if(!lista) return;
         lista.innerHTML = '';
         usluge.forEach(u => {
-            let tr = u.trajanje || 30;
             lista.innerHTML += '<li class="flex justify-between items-center py-2 border-b border-zinc-700">' +
-                '<span class="font-semibold text-zinc-200">' + u.ime + ' (' + tr + ' min)</span>' +
+                '<span class="font-semibold text-zinc-200">' + u.ime + ' (' + (u.trajanje || 30) + ' min)</span>' +
                 '<div class="flex gap-2 items-center">' +
                     '<input type="number" id="cena-' + u.id + '" value="' + u.cena + '" class="w-20 p-1 text-black text-center rounded font-bold">' +
-                    '<button onclick="sacuvajCenu(' + u.id + ', \'' + u.ime + '\', ' + tr + ')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-bold text-xs">Sačuvaj</button>' +
+                    '<button onclick="sacuvajCenu(' + u.id + ')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-bold text-xs">Sačuvaj</button>' +
                     '<button onclick="obrisiUslugu(' + u.id + ')" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded font-bold text-xs">✕</button>' +
                 '</div>' +
             '</li>';
@@ -248,15 +247,13 @@
         ucitajUslugeAdmin();
     }
 
-    async function sacuvajCenu(id, ime, trajanje) {
+    async function sacuvajCenu(id) {
         let novaCena = document.getElementById('cena-' + id).value;
         await fetch('/api/usluge/' + id, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                ime: ime,
-                cena: parseInt(novaCena),
-                trajanje: parseInt(trajanje) || 30
+                cena: parseInt(novaCena)
             })
         });
         alert('Cena uspešno izmenjena!');
@@ -267,36 +264,6 @@
         if(confirm('Da li ste sigurni da želite da obrišete ovu uslugu?')) {
             await fetch('/api/usluge/' + id, { method: 'DELETE' });
             ucitajUslugeAdmin();
-        }
-    }
-
-    ucitajNedelju();
-    ucitajUslugeAdmin();
-    </script>
-</body>
-</html>
-
-    async function sacuvajCenu(id, ime, trajanje) {
-        let novaCena = document.getElementById(`cena-${id}`).value;
-        await fetch(`/api/usluge/${id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                ime: ime,
-                cena: parseInt(novaCena),
-                trajanje: parseInt(trajanje) || 30
-            })
-        });
-        alert('Cena uspešno izmenjena!');
-        ucitajUslugeAdmin();
-    }
-
-    async function obrisiUslugu(id) {
-        if(confirm('Da li ste sigurni da želite da obrišete ovu uslugu?')) {
-            await fetch('/api/usluge/' + id, { method: 'DELETE' });
-            ucitajUslugeAdmin();
-        }
-    }
         }
     }
 
