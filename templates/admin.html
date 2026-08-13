@@ -146,38 +146,35 @@
     </div>
 
     <script>
-    let trenutniPonedeljak = getPonedeljak(new Date());
-
-    function getPonedeljak(d) {
-        d = new Date(d);
-        let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    }
+    let trenutniPocetniDan = new Date();
 
     function formatirajDatum(d) {
         return d.toISOString().split('T')[0];
     }
 
     function promeniNedelju(smer) {
-        trenutniPonedeljak.setDate(trenutniPonedeljak.getDate() + (smer * 7));
+        trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
         ucitajNedelju();
     }
 
     async function ucitajNedelju() {
         let dani = [];
-        let imenaDana = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+        let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
         let headerRow = '<th>Vreme</th>';
-        for(let i=0; i<6; i++) {
-            let d = new Date(trenutniPonedeljak);
+        
+        // Prikazujemo 6 dana počevši od DANAŠNJEG DANA (danas je Četvrtak)
+        for(let i = 0; i < 6; i++) {
+            let d = new Date(trenutniPocetniDan);
             d.setDate(d.getDate() + i);
             let dStr = formatirajDatum(d);
             dani.push(dStr);
-            headerRow += '<th>' + imenaDana[i] + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+            let imeDana = imenaDana[d.getDay()];
+            headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
         }
         document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
         let prviDan = dani[0];
-        let poslednjiDan = dani[5];
+        let poslednjiDan = dani[dani.length - 1];
         document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
         try {
@@ -353,18 +350,8 @@
         }
     }
 
-    // Pokrećemo obe funkcije nezavisno da jedna ne blokira drugu!
-    try {
-        ucitajNedelju();
-    } catch (e) {
-        console.error("Greška nedelja:", e);
-    }
-
-    try {
-        ucitajUslugeAdmin();
-    } catch (e) {
-        console.error("Greška usluge:", e);
-    }
-    </script>
+    try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
+    try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
+</script>
 </body>
 </html>
