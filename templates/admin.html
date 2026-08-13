@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-zinc-900 text-white min-h-screen p-4 md:p-8">
-
     <div class="max-w-6xl mx-auto">
         <!-- Zaglavlje -->
         <div class="flex justify-between items-center mb-8 border-b border-zinc-700 pb-4">
@@ -28,11 +27,9 @@
                 <thead class="bg-zinc-700 text-amber-500 uppercase font-bold text-center">
                     <tr id="zaglavljeTabele">
                         <th class="p-3 border-b border-zinc-600">Vreme</th>
-                        <!-- Dani se generišu dinamički -->
                     </tr>
                 </thead>
                 <tbody id="teloTabele" class="divide-y divide-zinc-700 text-center">
-                    <!-- Slotovi se generišu dinamički -->
                 </tbody>
             </table>
         </div>
@@ -40,9 +37,7 @@
         <!-- Sekcija za upravljanje uslugama -->
         <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700">
             <h2 class="text-xl font-bold text-amber-500 mb-4">Upravljanje uslugama i cenama</h2>
-            
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Forma za dodavanje -->
                 <div>
                     <h3 class="text-md font-semibold text-zinc-300 mb-3">Dodaj novu uslugu</h3>
                     <div class="space-y-3">
@@ -52,12 +47,9 @@
                         <button onclick="dodajNovuUslugu()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2 rounded">Dodaj uslugu</button>
                     </div>
                 </div>
-
-                <!-- Lista postojećih usluga -->
                 <div>
                     <h3 class="text-md font-semibold text-zinc-300 mb-3">Postojeće usluge</h3>
                     <ul id="listaUslugaAdmin" class="space-y-2">
-                        <!-- Generiše se dinamički -->
                     </ul>
                 </div>
             </div>
@@ -118,94 +110,46 @@
             d.setDate(d.getDate() + i);
             let dStr = formatirajDatum(d);
             dani.push(dStr);
-            headerRow += `<th class="p-3 border-b border-zinc-600">${imenaDana[i]}<br><span class="text-xs text-zinc-400">${dStr.split('-').slice(1).join('.')}</span></th>`;
+            headerRow += '<th class="p-3 border-b border-zinc-600">' + imenaDana[i] + '<br><span class="text-xs text-zinc-400">' + dStr.split('-').slice(1).join('.') + '</span></th>';
         }
         document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
         let prviDan = dani[0];
         let poslednjiDan = dani[5];
-        document.getElementById('rasponNedelje').innerText = `${prviDan} do ${poslednjiDan}`;
+        document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
-        let res = await fetch(`/api/raspored_nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+        let res = await fetch('/api/raspored_nedelja?pocetak=' + prviDan + '&kraj=' + poslednjiDan);
         let podaci = await res.json();
 
         let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
         let tbody = '';
         sati.forEach(vreme => {
-            tbody += `<tr><td class="p-2 font-bold text-amber-500 border-r border-zinc-700">${vreme}</td>`;
+            tbody += '<tr><td class="p-2 font-bold text-amber-500 border-r border-zinc-700">' + vreme + '</td>';
             dani.forEach(datum => {
                 let klijent = podaci[datum] && podaci[datum][vreme] ? podaci[datum][vreme] : null;
                 if(klijent && klijent.status === 'zauzet') {
-                    tbody += `
-                        <script>
-    let trenutniPonedeljak = getPonedeljak(new Date());
-
-    function getPonedeljak(d) {
-        d = new Date(d);
-        let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    }
-
-    function formatirajDatum(d) {
-        return d.toISOString().split('T')[0];
-    }
-
-    function promeniNedelju(smer) {
-        trenutniPonedeljak.setDate(trenutniPonedeljak.getDate() + (smer * 7));
-        ucitajNedelju();
-    }
-
-    async function ucitajNedelju() {
-        let dani = [];
-        let imenaDana = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-        let headerRow = '<th class="p-3 border-b border-zinc-600">Vreme</th>';
-        for(let i=0; i<6; i++) {
-            let d = new Date(trenutniPonedeljak);
-            d.setDate(d.getDate() + i);
-            let dStr = formatirajDatum(d);
-            dani.push(dStr);
-            headerRow += `<th class="p-3 border-b border-zinc-600">${imenaDana[i]}<br><span class="text-xs text-zinc-400">${dStr.split('-').slice(1).join('.')}</span></th>`;
-        }
-        document.getElementById('zaglavljeTabele').innerHTML = headerRow;
-
-        let prviDan = dani[0];
-        let poslednjiDan = dani[5];
-        document.getElementById('rasponNedelje').innerText = `${prviDan} do ${poslednjiDan}`;
-
-        let res = await fetch(`/api/raspored_nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
-        let podaci = await res.json();
-
-        let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
-        let tbody = '';
-        sati.forEach(vreme => {
-            tbody += `<tr><td class="p-2 font-bold text-amber-500 border-r border-zinc-700">${vreme}</td>`;
-            dani.forEach(datum => {
-                let klijent = podaci[datum] && podaci[datum][vreme] ? podaci[datum][vreme] : null;
-                if(klijent && klijent.status === 'zauzet') {
-                    tbody += `
-                        <td class="p-2 border border-zinc-700 bg-red-900/40 text-red-200">
-                            <div class="font-bold text-xs">${klijent.ime || 'Zauzeto'}</div>
-                            <div class="text-[10px] text-zinc-400">${klijent.usluga || ''} (${klijent.cena || 0} RSD)</div>
-                            <button onclick="oslobodiTermin('${datum}', '${vreme}')" class="mt-1 bg-red-800 hover:bg-red-700 text-white text-[10px] px-2 py-0.5 rounded">Oslobodi</button>
-                        </td>`;
+                    tbody += '<td class="p-2 border border-zinc-700 bg-red-900/40 text-red-200">' +
+                        '<div class="font-bold text-xs">' + (klijent.ime || 'Zauzeto') + '</div>' +
+                        '<div class="text-[10px] text-zinc-400">' + (klijent.usluga || '') + ' (' + (klijent.cena || 0) + ' RSD)</div>' +
+                        '<button onclick="oslobodiTermin(\'' + datum + '\', \'' + vreme + '\')" class="mt-1 bg-red-800 hover:bg-red-700 text-white text-[10px] px-2 py-0.5 rounded">Oslobodi</button>' +
+                    '</td>';
                 } else {
-                    tbody += `
-                        <td class="p-2 border border-zinc-700 hover:bg-zinc-700/50 cursor-pointer" onclick="otvoriZakazivanje('${datum}', '${vreme}')">
-                            <span class="text-xs text-zinc-500">+ Zakazi</span>
-                        </td>`;
+                    tbody += '<td class="p-2 border border-zinc-700 hover:bg-zinc-700/50 cursor-pointer" onclick="otvoriZakazivanje(\'' + datum + '\', \'' + vreme + '\')">' +
+                        '<span class="text-xs text-zinc-500">+ Zakazi</span>' +
+                    '</td>';
                 }
             });
-            tbody += `</tr>`;
+            tbody += '</tr>';
         });
         document.getElementById('teloTabele').innerHTML = tbody;
     }
 
     async function oslobodiTermin(datum, vreme) {
-        if(confirm(`Da li otkazujete termin ${datum} u ${vreme}?`)) {
+        if(confirm('Da li otkazujete termin ' + datum + ' u ' + vreme + '?')) {
             await fetch('/api/otkazi', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({datum, vreme})
+                body: JSON.stringify({datum: datum, vreme: vreme})
             });
             ucitajNedelju();
         }
@@ -219,7 +163,7 @@
         let res = await fetch('/api/usluge');
         let usluge = await res.json();
         let select = document.getElementById('adminUsluga');
-        select.innerHTML = usluge.map(u => `<option value="${u.ime}|${u.cena}">${u.ime} (${u.cena} RSD)</option>`).join('');
+        select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>').join('');
         document.getElementById('novaRezervacijaModal').classList.remove('hidden');
     }
 
@@ -239,7 +183,7 @@
         const res = await fetch('/api/zakazi', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ datum, vreme, ime, telefon, usluga, cena })
+            body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, telefon: telefon, usluga: usluga, cena: cena })
         });
         const data = await res.json();
         if(data.status === 'ok') {
