@@ -4,24 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Brica</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- NE KORISTIMO TAILWIND - SAMO ČIST CSS -->
     <style>
-        .service-card {
-            background: #1e1e1e;
-            border: 1px solid #3f3f3f;
-            border-radius: 8px;
-            padding: 10px 14px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Zaglavlje */
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
-            transition: all 0.2s;
+            border-bottom: 1px solid #3f3f3f;
+            padding-bottom: 16px;
+            margin-bottom: 32px;
         }
-        .service-card:hover {
+        .header h1 {
+            color: #d4af37;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header a {
+            background: #2d2d2d;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .header a:hover {
+            background: #3d3d3d;
+        }
+
+        /* Box za usluge */
+        .services-box {
+            background: #1e1e1e;
+            border: 1px solid #3f3f3f;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .services-box h2 {
+            color: #d4af37;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .services-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .services-row input {
+            background: #0d0d0d;
+            border: 1px solid #3f3f3f;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 14px;
+        }
+        .services-row input:focus {
             border-color: #d4af37;
-            background: #2a2a2a;
+            outline: none;
         }
-        .service-card input[type="number"] {
+        .services-row input[type="text"] {
+            width: 160px;
+        }
+        .services-row input[type="number"] {
+            width: 100px;
+        }
+        .services-row input[type="number"].small {
+            width: 80px;
+        }
+        .btn-add {
+            background: #d4af37;
+            color: black;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-add:hover {
+            background: #f59e0b;
+        }
+        .btn-add:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Lista usluga */
+        .service-item {
+            background: #0d0d0d;
+            border: 1px solid #2d2d2d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .service-item:hover {
+            border-color: #d4af37;
+        }
+        .service-item .name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+        .service-item .duration {
+            font-size: 11px;
+            background: rgba(212, 175, 55, 0.2);
+            color: #d4af37;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        .service-item .controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .service-item .controls .label {
+            font-size: 11px;
+            color: #888;
+        }
+        .service-item .controls input[type="number"] {
             width: 60px;
             padding: 4px 6px;
             border-radius: 4px;
@@ -30,8 +155,9 @@
             color: white;
             text-align: center;
             font-weight: bold;
+            font-size: 13px;
         }
-        .service-card input[type="number"]:focus {
+        .service-item .controls input[type="number"]:focus {
             border-color: #d4af37;
             outline: none;
         }
@@ -61,111 +187,255 @@
         .btn-delete:hover {
             background: #b91c1c;
         }
-        .btn-add {
+        .empty-message {
+            text-align: center;
+            padding: 12px;
+            color: #666;
+            font-size: 14px;
+        }
+        .error-message {
+            text-align: center;
+            padding: 12px;
+            color: #ef4444;
+            font-size: 14px;
+        }
+
+        /* Navigacija */
+        .nav-week {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #3f3f3f;
+            margin-bottom: 24px;
+        }
+        .nav-week button {
             background: #d4af37;
             color: black;
-            padding: 8px 20px;
+            padding: 8px 16px;
             border-radius: 6px;
             font-weight: bold;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
         }
-        .btn-add:hover {
+        .nav-week button:hover {
             background: #f59e0b;
-            transform: scale(1.02);
         }
-        .btn-add:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
+        .nav-week span {
+            font-weight: bold;
+            color: #a0a0a0;
         }
-        .input-field {
+
+        /* Tabela */
+        .table-wrap {
+            overflow-x: auto;
+            background: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #3f3f3f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead {
+            background: #2d2d2d;
+            color: #d4af37;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-align: center;
+        }
+        th {
+            padding: 12px;
+            border-bottom: 1px solid #3f3f3f;
+        }
+        td {
+            padding: 6px;
+            border: 1px solid #2d2d2d;
+            text-align: center;
+        }
+        td .time-label {
+            color: #d4af37;
+            font-weight: bold;
+        }
+        .slot-free {
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .slot-free:hover {
+            background: #2d2d2d;
+        }
+        .slot-booked {
+            background: rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
+            font-size: 12px;
+        }
+        .slot-booked .name {
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .slot-booked .detail {
+            font-size: 10px;
+            color: #888;
+        }
+        .slot-booked .btn-free {
+            background: #991b1b;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+        .slot-booked .btn-free:hover {
+            background: #7f1d1d;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #3f3f3f;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-content h3 {
+            color: #d4af37;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        .modal-content label {
+            font-size: 11px;
+            color: #888;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 8px 12px;
             background: #0d0d0d;
             border: 1px solid #3f3f3f;
             border-radius: 6px;
-            padding: 8px 12px;
             color: white;
-            width: 100%;
+            margin-bottom: 12px;
         }
-        .input-field:focus {
+        .modal-content input:focus, .modal-content select:focus {
             border-color: #d4af37;
             outline: none;
         }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 8px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-actions .btn-confirm {
+            background: #d4af37;
+            color: black;
+        }
+        .modal-actions .btn-confirm:hover {
+            background: #f59e0b;
+        }
+        .modal-actions .btn-cancel {
+            background: #2d2d2d;
+            color: white;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #3d3d3d;
+        }
     </style>
 </head>
-<body class="bg-zinc-900 text-white min-h-screen p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
+<body>
+    <div class="container">
         <!-- Zaglavlje -->
-        <div class="flex justify-between items-center mb-8 border-b border-zinc-700 pb-4">
-            <h1 class="text-3xl font-bold text-amber-500">💈 Admin Panel - Brica</h1>
-            <a href="/" class="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold text-sm">Nazad na sajt</a>
+        <div class="header">
+            <h1>💈 Admin Panel - Brica</h1>
+            <a href="/">Nazad na sajt</a>
         </div>
 
         <!-- ========================================== -->
-        <!-- UPRAVLJANJE USLUGAMA - IZVADJENO IZNAD TABELE -->
+        <!-- UPRAVLJANJE USLUGAMA -->
         <!-- ========================================== -->
-        <div class="bg-zinc-800 p-4 rounded-lg border border-zinc-700 mb-6">
-            <div class="flex items-center justify-between gap-4 flex-wrap">
-                <div class="flex items-center gap-3 flex-1 flex-wrap">
-                    <span class="text-amber-500 font-bold text-sm whitespace-nowrap">📋 Usluge:</span>
-                    <input type="text" id="novoIme" placeholder="Naziv" class="input-field w-32 md:w-40">
-                    <input type="number" id="novaCena" placeholder="Cena" class="input-field w-24 md:w-28">
-                    <input type="number" id="novoTrajanje" placeholder="Min" value="30" class="input-field w-20 md:w-24">
-                    <button onclick="dodajNovuUslugu()" class="btn-add">➕ Dodaj</button>
-                </div>
+        <div class="services-box">
+            <h2>📋 Upravljanje uslugama i cenama</h2>
+            
+            <div class="services-row">
+                <input type="text" id="novoIme" placeholder="Naziv usluge">
+                <input type="number" id="novaCena" placeholder="Cena">
+                <input type="number" id="novoTrajanje" placeholder="Trajanje" value="30" class="small">
+                <button onclick="dodajNovuUslugu()" class="btn-add" id="btnDodaj">➕ Dodaj uslugu</button>
             </div>
             
-            <!-- Lista usluga - mala, kompaktna -->
-            <div id="listaUslugaAdmin" class="mt-3 space-y-1 max-h-60 overflow-y-auto">
-                <div class="text-center py-2 text-zinc-500 text-sm">⏳ Učitavanje usluga...</div>
+            <div id="listaUslugaAdmin">
+                <div class="empty-message">⏳ Učitavanje usluga...</div>
             </div>
         </div>
 
-        <!-- Navigacija za nedelje -->
-        <div class="flex justify-between items-center bg-zinc-800 p-4 rounded-lg mb-6 border border-zinc-700">
-            <button onclick="promeniNedelju(-1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">← Prethodna nedelja</button>
-            <span id="rasponNedelje" class="text-lg font-bold text-zinc-300"></span>
-            <button onclick="promeniNedelju(1)" class="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold">Sledeća nedelja →</button>
+        <!-- Navigacija -->
+        <div class="nav-week">
+            <button onclick="promeniNedelju(-1)">← Prethodna nedelja</button>
+            <span id="rasponNedelje"></span>
+            <button onclick="promeniNedelju(1)">Sledeća nedelja →</button>
         </div>
 
-        <!-- Tabela rasporeda -->
-        <div class="overflow-x-auto bg-zinc-800 rounded-lg border border-zinc-700 mb-8">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-zinc-700 text-amber-500 uppercase font-bold text-center">
+        <!-- Tabela -->
+        <div class="table-wrap">
+            <table>
+                <thead>
                     <tr id="zaglavljeTabele">
-                        <th class="p-3 border-b border-zinc-600">Vreme</th>
+                        <th>Vreme</th>
                     </tr>
                 </thead>
-                <tbody id="teloTabele" class="divide-y divide-zinc-700 text-center">
+                <tbody id="teloTabele">
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Modal za ručno zakazivanje -->
-    <div id="novaRezervacijaModal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
-        <div class="bg-zinc-800 p-6 rounded-lg border border-zinc-700 w-full max-w-md">
-            <h3 class="text-lg font-bold text-amber-500 mb-4">Zakazivanje termina</h3>
-            <div class="space-y-3">
-                <input type="hidden" id="adminDatum" name="adminDatum">
-                <input type="hidden" id="adminVreme" name="adminVreme">
-                <div>
-                    <label class="text-xs text-zinc-400">Ime klijenta:</label>
-                    <input type="text" id="adminIme" name="adminIme" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
-                </div>
-                <div>
-                    <label class="text-xs text-zinc-400">Telefon:</label>
-                    <input type="text" id="adminTel" name="adminTel" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white">
-                </div>
-                <div>
-                    <label class="text-xs text-zinc-400">Usluga:</label>
-                    <select id="adminUsluga" name="adminUsluga" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-white"></select>
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="sacuvajAdminZakazivanje()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2 rounded">Potvrdi</button>
-                    <button onclick="zatvoriNovoZakazivanje()" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded">Otkaži</button>
-                </div>
+    <!-- Modal -->
+    <div id="novaRezervacijaModal" class="modal">
+        <div class="modal-content">
+            <h3>Zakazivanje termina</h3>
+            <input type="hidden" id="adminDatum">
+            <input type="hidden" id="adminVreme">
+            
+            <label>Ime klijenta:</label>
+            <input type="text" id="adminIme">
+            
+            <label>Telefon:</label>
+            <input type="text" id="adminTel">
+            
+            <label>Usluga:</label>
+            <select id="adminUsluga"></select>
+            
+            <div class="modal-actions">
+                <button onclick="sacuvajAdminZakazivanje()" class="btn-confirm">Potvrdi</button>
+                <button onclick="zatvoriNovoZakazivanje()" class="btn-cancel">Otkaži</button>
             </div>
         </div>
     </div>
@@ -195,13 +465,13 @@
     async function ucitajNedelju() {
         let dani = [];
         let imenaDana = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-        let headerRow = '<th class="p-3 border-b border-zinc-600">Vreme</th>';
+        let headerRow = '<th>Vreme</th>';
         for(let i=0; i<6; i++) {
             let d = new Date(trenutniPonedeljak);
             d.setDate(d.getDate() + i);
             let dStr = formatirajDatum(d);
             dani.push(dStr);
-            headerRow += '<th class="p-3 border-b border-zinc-600">' + imenaDana[i] + '<br><span class="text-xs text-zinc-400">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+            headerRow += '<th>' + imenaDana[i] + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
         }
         document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
@@ -216,19 +486,17 @@
             let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
             let tbody = '';
             sati.forEach(vreme => {
-                tbody += '<tr><td class="p-2 font-bold text-amber-500 border-r border-zinc-700">' + vreme + '</td>';
+                tbody += '<tr><td><span class="time-label">' + vreme + '</span></td>';
                 dani.forEach(datum => {
                     let klijent = podaci[datum] && podaci[datum][vreme] ? podaci[datum][vreme] : null;
                     if(klijent && klijent.status === 'zauzet') {
-                        tbody += '<td class="p-2 border border-zinc-700 bg-red-900/40 text-red-200">' +
-                            '<div class="font-bold text-xs">' + (klijent.ime || 'Zauzeto') + '</div>' +
-                            '<div class="text-[10px] text-zinc-400">' + (klijent.usluga || '') + ' (' + (klijent.cena || 0) + ' RSD)</div>' +
-                            '<button onclick="oslobodiTermin(\'' + datum + '\', \'' + vreme + '\')" class="mt-1 bg-red-800 hover:bg-red-700 text-white text-[10px] px-2 py-0.5 rounded">Oslobodi</button>' +
+                        tbody += '<td class="slot-booked">' +
+                            '<div class="name">' + (klijent.ime || 'Zauzeto') + '</div>' +
+                            '<div class="detail">' + (klijent.usluga || '') + ' (' + (klijent.cena || 0) + ' RSD)</div>' +
+                            '<button class="btn-free" onclick="oslobodiTermin(\'' + datum + '\', \'' + vreme + '\')">Oslobodi</button>' +
                         '</td>';
                     } else {
-                        tbody += '<td class="p-2 border border-zinc-700 hover:bg-zinc-700/50 cursor-pointer" onclick="otvoriZakazivanje(\'' + datum + '\', \'' + vreme + '\')">' +
-                            '<span class="text-xs text-zinc-500">+ Zakazi</span>' +
-                        '</td>';
+                        tbody += '<td class="slot-free" onclick="otvoriZakazivanje(\'' + datum + '\', \'' + vreme + '\')">+ Zakazi</td>';
                     }
                 });
                 tbody += '</tr>';
@@ -255,15 +523,21 @@
         document.getElementById('adminVreme').value = vreme;
         document.getElementById('adminIme').value = '';
         document.getElementById('adminTel').value = '';
-        let res = await fetch('/api/usluge');
-        let usluge = await res.json();
-        let select = document.getElementById('adminUsluga');
-        select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>').join('');
-        document.getElementById('novaRezervacijaModal').classList.remove('hidden');
+        
+        try {
+            let res = await fetch('/api/usluge');
+            let usluge = await res.json();
+            let select = document.getElementById('adminUsluga');
+            select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>').join('');
+        } catch(e) {
+            console.error('Greška:', e);
+        }
+        
+        document.getElementById('novaRezervacijaModal').classList.add('show');
     }
 
     function zatvoriNovoZakazivanje() {
-        document.getElementById('novaRezervacijaModal').classList.add('hidden');
+        document.getElementById('novaRezervacijaModal').classList.remove('show');
     }
 
     async function sacuvajAdminZakazivanje() {
@@ -295,10 +569,7 @@
 
     async function ucitajUslugeAdmin() {
         const container = document.getElementById('listaUslugaAdmin');
-        if (!container) {
-            console.error('Element listaUslugaAdmin nije pronađen!');
-            return;
-        }
+        if (!container) return;
         
         try {
             console.log('🔄 Učitavanje usluga...');
@@ -312,30 +583,21 @@
             console.log('✅ Usluge učitane:', usluge);
             
             if (usluge.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-2 text-zinc-500 text-sm">
-                        📭 Nema dodatih usluga
-                    </div>
-                `;
+                container.innerHTML = '<div class="empty-message">📭 Nema dodatih usluga</div>';
                 return;
             }
             
             container.innerHTML = usluge.map(u => `
-                <div class="service-card">
-                    <div class="flex items-center gap-3">
-                        <span class="font-semibold text-zinc-200 text-sm">${u.ime}</span>
-                        <span class="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full">${u.trajanje || 30} min</span>
+                <div class="service-item">
+                    <div>
+                        <span class="name">${u.ime}</span>
+                        <span class="duration">${u.trajanje || 30} min</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-zinc-400">RSD</span>
-                        <input type="number" 
-                               id="cena-${u.id}" 
-                               name="cena-${u.id}"
-                               value="${u.cena}" 
-                               min="0" 
-                               step="50">
-                        <button onclick="sacuvajCenu(${u.id})" class="btn-save">💾</button>
-                        <button onclick="obrisiUslugu(${u.id})" class="btn-delete">🗑️</button>
+                    <div class="controls">
+                        <span class="label">RSD</span>
+                        <input type="number" id="cena-${u.id}" value="${u.cena}" min="0" step="50">
+                        <button class="btn-save" onclick="sacuvajCenu(${u.id})">💾</button>
+                        <button class="btn-delete" onclick="obrisiUslugu(${u.id})">🗑️</button>
                     </div>
                 </div>
             `).join('');
@@ -343,9 +605,10 @@
         } catch (error) {
             console.error('❌ Greška:', error);
             container.innerHTML = `
-                <div class="text-center py-2 text-red-500 text-sm">
+                <div class="error-message">
                     ❌ Greška: ${error.message}
-                    <button onclick="ucitajUslugeAdmin()" class="text-amber-400 hover:underline ml-2">
+                    <br>
+                    <button onclick="ucitajUslugeAdmin()" style="background:#d4af37;color:black;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;margin-top:8px;">
                         🔄 Pokušaj ponovo
                     </button>
                 </div>
@@ -374,7 +637,7 @@
             return;
         }
         
-        const dugme = event.target;
+        const dugme = document.getElementById('btnDodaj');
         const originalText = dugme.textContent;
         dugme.textContent = '⏳';
         dugme.disabled = true;
@@ -401,7 +664,7 @@
             cenaInput.value = '';
             trajanjeInput.value = '30';
             
-            alert('✅ Usluga "' + ime + '" dodata!');
+            alert('✅ Usluga "' + ime + '" uspešno dodata!');
             ucitajUslugeAdmin();
             
         } catch (error) {
@@ -436,7 +699,7 @@
                 throw new Error(error.poruka || 'Greška pri ažuriranju');
             }
             
-            alert('✅ Cena ažurirana na ' + novaCena + ' RSD');
+            alert('✅ Cena uspešno ažurirana na ' + novaCena + ' RSD');
             ucitajUslugeAdmin();
             
         } catch (error) {
@@ -453,7 +716,7 @@
             if (usluga) ime = usluga.ime;
         } catch (e) {}
         
-        if (!confirm(`⚠️ Obriši "${ime}"?`)) {
+        if (!confirm(`⚠️ Da li ste sigurni da želite da obrišete "${ime}"?`)) {
             return;
         }
         
@@ -467,7 +730,7 @@
                 throw new Error(error.poruka || 'Greška pri brisanju');
             }
             
-            alert('✅ Usluga "' + ime + '" obrisana!');
+            alert('✅ Usluga "' + ime + '" uspešno obrisana!');
             ucitajUslugeAdmin();
             
         } catch (error) {
