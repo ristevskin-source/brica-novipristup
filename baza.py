@@ -63,32 +63,73 @@ def get_slotovi_za_datum(datum_str):
     
     return [{"vreme": r[0], "status": r[1], "ime": r[2], "telefon": r[3], "usluga": r[4], "cena": r[5]} for r in rows]
 
-def zakazi_termin(datum, vreme, ime, telefon, usluga, cena):
+def get_trajanje_usluge(ime_usluge: str) -> int:
+    """Vraća trajanje usluge u minutima iz baze."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT status FROM rezervacije WHERE datum=? AND vreme=?", (datum, vreme))
-    res = c.fetchone()
+    c.execute("SELECT trajanje FROM usluge WHERE ime = ?", (ime_usluge,))
+    red = c.fetchone()
+    conn.close()
+    if red and red[0]:
+        return red[0]
+    return 30
+
+def zakazi_termin(datum: str, pocetno_vreme: str, ime: str, telefon: str, usluga: str, cena: int, trajanje_minuta: int = 30):
+    conn = get_connection()
+    c = conn.cursor()
     
-    if not res or res[0] != 'slobodan':
-        conn.close()
-        return False
+    # Prilagođeno slotovima u tvojoj bazi (30 minuta)
+    INTERVAL = 30
+    broj_slotova = (trajanje_minuta + INTERVAL - 1) // INTERVAL
+    
+    t_format = "%H:%M"
+    pocetno_dt = datetime.strptime(pocetno_vreme, t_format)
+    
+    # Pravimo listu svih vremena koja ova usluga zauzima
+    potrebni_slotovi = []
+    for i in range(broj_slotova):
+        slot_dt = pocetno_dt + timedelta(minutes=i * INTERVAL)
+        potrebni_slotovi.append(slot_dt.strftime(t_format))
+    
+    try:
+        # 1. Proveravamo sve potrebne slotove
+        placeholders = ",".join(["?"] * len(potrebni_slotovi))
+        c.execute(f"""
+            SELECT vreme, status 
+            FROM rezervacije 
+            WHERE datum = ? AND vreme IN ({placeholders})
+        """, [datum] + potrebni_slotovi)
         
-    c.execute("""
-        UPDATE rezervacije 
-        SET ime=?, telefon=?, usluga=?, cena=?, status='zakazan' 
-        WHERE datum=? AND vreme=?
-    """, (ime, telefon, usluga, cena, datum, vreme))
-    
-    conn.commit()
-    conn.close()
-    return True
-    def get_sve_usluge():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT id, ime, cena, trajanje FROM usluge")
-    rows = c.fetchall()
-    conn.close()
-    return [{"id": r[0], "ime": r[1], "cena": r[2], "trajanje": r[3]} for r in rows]
+        redovi = c.fetchall()
+        
+        # Ako nema dovoljno slotova do kraja radnog vremena
+        if len(redovi) != len(potrebni_slotovi):
+            conn.close()
+            return False
+            
+        # Ako je bilo koji od tih slotova već zauzet
+        for slot in redovi:
+            if slot[1] != 'slobodan':
+                conn.close()
+                return False
+                
+        # 2. Ako su SVI slobodni, zauzimamo ih sve odjednom!
+        c.execute(f"""
+            UPDATE rezervacije 
+            SET ime = ?, telefon = ?, usluga = ?, cena = ?, status = 'zakazan'
+            WHERE datum = ? AND vreme IN ({placeholders})
+        """, [ime, telefon, usluga, cena, datum] + potrebni_slotovi)
+        
+        conn.commit()
+        conn.close()
+        return True
+
+    except Exception as e:
+        conn.close()
+        print("Greška pri zakazivanju:", e)
+        return False
+
+def get_sve_usluge():
 
 def dodaj_uslugu(ime, cena, trajanje=30):
     conn = get_connection()
