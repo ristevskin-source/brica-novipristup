@@ -138,7 +138,7 @@
             azurirajInfo();
             document.getElementById('formaZakazivanje').scrollIntoView({ behavior: 'smooth' });
         }
-
+        
         function azurirajInfo() {
             if(izabranaUsluga && izabraniDatum && izabranoVreme) {
                 document.getElementById('izabraniInfo').innerHTML = `
@@ -174,8 +174,9 @@
             }
         }
 
-        ucitajUsluge();
-        ucitajSlotove();
-    </script>
-</body>
+          document.addEventListener("DOMContentLoaded", function() {
+            ucitajUsluge();
+        });
+    </script>  
+    </body>
 </html>
