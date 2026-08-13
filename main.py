@@ -106,3 +106,6 @@ async def otkazi(req: OtkaziReq):
     conn.commit()
     conn.close()
     return {"status": "ok"}
+@app.get("/api/raspored_nedelja")
+async def get_raspored_nedelja(pocetak: str, kraj: str):
+    return baza.get_raspored_za_period(pocetak, kraj)
