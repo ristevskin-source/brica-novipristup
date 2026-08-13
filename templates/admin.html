@@ -338,10 +338,18 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-    ucitajNedelju();
-    ucitajUslugeAdmin();
-});
+    // Pokrećemo obe funkcije nezavisno da jedna ne blokira drugu!
+    try {
+        ucitajNedelju();
+    } catch (e) {
+        console.error("Greška nedelja:", e);
+    }
+
+    try {
+        ucitajUslugeAdmin();
+    } catch (e) {
+        console.error("Greška usluge:", e);
+    }
     </script>
 </body>
 </html>
