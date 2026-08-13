@@ -1,5 +1,8 @@
 import sqlite3
 from datetime import datetime, timedelta
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
 
 DB_NAME = 'brica.db'
 
@@ -129,15 +132,27 @@ def zakazi_termin(datum: str, pocetno_vreme: str, ime: str, telefon: str, usluga
         print("Greška pri zakazivanju:", e)
         return False
 
+# ============================================
+# FUNKCIJE ZA UPRAVLJANJE USLUGAMA
+# ============================================
+
 def get_sve_usluge():
+    """Dohvata sve usluge iz baze"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, ime, cena, trajanje FROM usluge ORDER BY id DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [{"id": r[0], "ime": r[1], "cena": r[2], "trajanje": r[3]} for r in rows]
 
 def dodaj_uslugu(ime, cena, trajanje=30):
     conn = get_connection()
     c = conn.cursor()
     c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
     conn.commit()
+    novi_id = c.lastrowid
     conn.close()
-    return True
+    return novi_id
 
 def azuriraj_uslugu(usluga_id, nova_cena):
     conn = get_connection()
@@ -150,7 +165,116 @@ def azuriraj_uslugu(usluga_id, nova_cena):
 def obrisi_uslugu(usluga_id):
     conn = get_connection()
     c = conn.cursor()
+    
+    # Proveri da li usluga ima aktivne rezervacije
+    c.execute("SELECT ime FROM usluge WHERE id=?", (usluga_id,))
+    usluga = c.fetchone()
+    if usluga:
+        c.execute("SELECT COUNT(*) FROM rezervacije WHERE usluga=? AND status='zakazan'", (usluga[0],))
+        broj = c.fetchone()[0]
+        if broj > 0:
+            conn.close()
+            return False, f"Usluga ima {broj} aktivnih rezervacija"
+    
     c.execute("DELETE FROM usluge WHERE id=?", (usluga_id,))
     conn.commit()
     conn.close()
-    return True
+    return True, "Usluga obrisana"
+
+# ============================================
+# API RUTE ZA ADMIN PANEL
+# ============================================
+
+@app.route('/api/usluge', methods=['GET'])
+def api_get_usluge():
+    """Dohvata sve usluge"""
+    try:
+        usluge = get_sve_usluge()
+        return jsonify(usluge)
+    except Exception as e:
+        return jsonify({'poruka': str(e)}), 500
+
+@app.route('/api/usluge', methods=['POST'])
+def api_dodaj_uslugu():
+    """Dodaje novu uslugu"""
+    try:
+        data = request.get_json()
+        ime = data.get('ime')
+        cena = data.get('cena')
+        trajanje = data.get('trajanje', 30)
+        
+        # Validacija
+        if not ime:
+            return jsonify({'poruka': 'Unesite naziv usluge'}), 400
+        if not cena or int(cena) <= 0:
+            return jsonify({'poruka': 'Unesite ispravnu cenu'}), 400
+        
+        # Dodaj u bazu
+        novi_id = dodaj_uslugu(ime, int(cena), int(trajanje))
+        
+        return jsonify({
+            'id': novi_id,
+            'ime': ime,
+            'cena': int(cena),
+            'trajanje': int(trajanje)
+        }), 201
+        
+    except Exception as e:
+        print('GREŠKA pri dodavanju:', e)
+        return jsonify({'poruka': str(e)}), 500
+
+@app.route('/api/usluge/<int:id>', methods=['PUT'])
+def api_izmeni_uslugu(id):
+    """Izmena cene usluge"""
+    try:
+        data = request.get_json()
+        nova_cena = data.get('cena')
+        
+        if nova_cena is None or int(nova_cena) < 0:
+            return jsonify({'poruka': 'Unesite ispravnu cenu'}), 400
+        
+        azuriraj_uslugu(id, int(nova_cena))
+        
+        return jsonify({
+            'poruka': 'Cena uspešno ažurirana',
+            'id': id,
+            'cena': int(nova_cena)
+        })
+        
+    except Exception as e:
+        print('GREŠKA pri izmeni:', e)
+        return jsonify({'poruka': str(e)}), 500
+
+@app.route('/api/usluge/<int:id>', methods=['DELETE'])
+def api_obrisi_uslugu(id):
+    """Brisanje usluge"""
+    try:
+        uspesno, poruka = obrisi_uslugu(id)
+        if not uspesno:
+            return jsonify({'poruka': poruka}), 400
+        
+        return jsonify({'poruka': poruka, 'id': id})
+        
+    except Exception as e:
+        print('GREŠKA pri brisanju:', e)
+        return jsonify({'poruka': str(e)}), 500
+
+# ============================================
+# RUTE ZA STRANICE
+# ============================================
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
+
+# ============================================
+# POKRETANJE APLIKACIJE
+# ============================================
+
+if __name__ == '__main__':
+    init_db()
+    app.run(debug=True, host='0.0.0.0', port=5000)
