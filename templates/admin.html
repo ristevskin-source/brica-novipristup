@@ -45,14 +45,25 @@
         .nav-week span { font-weight: bold; color: #a0a0a0; }
         
         .table-wrap { overflow-x: auto; background: #1e1e1e; border-radius: 8px; border: 1px solid #3f3f3f; }
-        table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+        table { width: 100%; min-width: 750px; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
         thead { background: #2d2d2d; color: #d4af37; text-transform: uppercase; font-weight: bold; text-align: center; }
-        th { padding: 12px 4px; border-bottom: 1px solid #3f3f3f; }
-        th:first-child, td:first-child { width: 80px; font-weight: bold; }
-        th:not(:first-child), td:not(:first-child) { width: calc((100% - 80px) / 6); }
-        td { padding: 6px 2px; border: 1px solid #2d2d2d; text-align: center; overflow: hidden; word-wrap: break-word; }
-        th:not(:first-child), td:not(:first-child) { width: calc((100% - 80px) / 6); }
-        td { padding: 6px 2px; border: 1px solid #2d2d2d; text-align: center; overflow: hidden; word-wrap: break-word; }
+        th { padding: 12px 4px; border-bottom: 1px solid #3f3f3f; position: sticky; top: 0; background: #2d2d2d; z-index: 2; }
+        
+        /* Fiksirana kolona sa vremenom */
+        th:first-child, td:first-child { 
+            width: 80px; 
+            min-width: 80px;
+            max-width: 80px;
+            position: sticky; 
+            left: 0; 
+            background: #1e1e1e; 
+            z-index: 10; 
+            border-right: 2px solid #d4af37; 
+        }
+        th:first-child { z-index: 20; background: #2d2d2d; }
+        
+        th:not(:first-child), td:not(:first-child) { width: 140px; min-width: 140px; }
+        td { padding: 6px 2px; border: 1px solid #2d2d2d; text-align: center; }
         td .time-label { color: #d4af37; font-weight: bold; }
         .slot-free { color: #666; font-size: 11px; cursor: pointer; }
         .slot-free:hover { background: #2d2d2d; }
