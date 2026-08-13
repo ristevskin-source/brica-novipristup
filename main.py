@@ -82,10 +82,17 @@ async def get_slotovi(datum: str):
 
 @app.post("/api/zakazi")
 async def zakazi(req: RezervacijaReq):
-    uspeh = baza.zakazi_termin(req.datum, req.vreme, req.ime, req.telefon, req.usluga, req.cena)
+    # Uzimamo tačno trajanje usluge u minutima iz baze
+    trajanje = baza.get_trajanje_usluge(req.usluga)
+    
+    # Pozivamo funkciju koja proverava i zauzima sve potrebne slotove odjednom
+    uspeh = baza.zakazi_termin(
+        req.datum, req.vreme, req.ime, req.telefon, req.usluga, req.cena, trajanje
+    )
+    
     if uspeh:
         return {"status": "ok", "poruka": "Termin uspešno zakazan!"}
-    return {"status": "error", "poruka": "Termin je već zauzet!"}
+    return {"status": "error", "poruka": "Termin ili neki od narednih slotova potrebnih za ovu uslugu je već zauzet!"}
 
 @app.post("/api/otkazi")
 async def otkazi(req: OtkaziReq):
