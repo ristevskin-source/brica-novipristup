@@ -244,3 +244,30 @@ def api_statistika():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+@app.route('/api/nedelja', methods=['GET'])
+def api_nedelja():
+    pocetak = request.args.get('pocetak')
+    kraj = request.args.get('kraj')
+    
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status, trajanje FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
+    rezervacije = c.fetchall()
+    conn.close()
+    
+    raspored = {}
+    for r in rezervacije:
+        datum, vreme, ime, usluga, cena, telefon, status, trajanje = r
+        if datum not in raspored:
+            raspored[datum] = {}
+        raspored[datum][vreme] = {
+            'ime': ime,
+            'usluga': usluga,
+            'cena': cena,
+            'telefon': telefon,
+            'status': status,
+            'trajanje': trajanje or 30
+        }
+        
+    return jsonify(raspored)
