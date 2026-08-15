@@ -2,33 +2,38 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel - Rezervacije i Usluge</title>
+    <title>Admin Panel - Rezervacije</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f4f9; color: #333; }
-        h1, h2 { color: #2c3e50; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #121212; color: #e0e0e0; }
+        h1, h2 { color: #ffffff; }
         .nav-container { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        button { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; transition: background 0.2s; }
-        button:hover { background: #0056b3; }
-        #rasponNedelje { font-size: 16px; color: #555; font-weight: bold; }
+        button { padding: 8px 16px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 4px; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        #rasponNedelje { font-size: 16px; color: #a1a1aa; font-weight: bold; }
         
-        .section { background: #fff; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .section { background: #1e1e1e; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #27272a; }
         
         .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: #fff; min-width: 800px; }
-        th, td { border: 1px solid #e0e0e0; padding: 12px 10px; text-align: center; vertical-align: middle; }
-        th { background: #007bff; color: white; font-weight: 600; font-size: 14px; }
-        td { font-size: 13px; }
-        tr td:first-child { background: #f8f9fa; font-weight: bold; color: #495057; width: 80px; }
+        table { width: 100%; border-collapse: collapse; background: #18181b; min-width: 800px; }
+        th, td { border: 1px solid #27272a; padding: 12px 10px; text-align: center; vertical-align: middle; }
+        th { background: #2563eb; color: white; font-weight: 600; font-size: 14px; }
+        td { font-size: 13px; color: #f4f4f5; }
+        tr td:first-child { background: #27272a; font-weight: bold; color: #f4f4f5; width: 80px; }
 
         .form-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
-        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        input, select { padding: 8px; border: 1px solid #3f3f46; border-radius: 4px; background: #27272a; color: white; }
         
-        #finansijeInfo { font-size: 18px; font-weight: bold; color: #28a745; margin-top: 10px; }
+        #finansijeInfo { font-size: 18px; font-weight: bold; color: #4ade80; margin-top: 10px; }
+
+        /* Modal stilovi */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #3f3f46; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <h1>Admin Panel</h1>
+    <h1>Admin Panel - Rezervacije</h1>
     
     <!-- SEKCIJA: Kalendar i Nedelja -->
     <div class="section">
@@ -74,7 +79,27 @@
             <input type="text" id="novaUslugaNaziv" placeholder="Naziv usluge">
             <input type="number" id="novaUslugaCena" placeholder="Cena (RSD)">
             <input type="number" id="novaUslugaTrajanje" placeholder="Trajanje (min)">
-            <button onclick="dodajUslugu()" style="background: #28a745;">Dodaj uslugu</button>
+            <button onclick="dodajUslugu()" style="background: #16a34a;">Dodaj uslugu</button>
+        </div>
+    </div>
+
+    <!-- Modal za detalje klijenta -->
+    <div id="detaljiKlijentaModal" class="modal">
+        <div class="modal-content">
+            <h3>📋 Detalji rezervacije</h3>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Datum i vreme: <strong id="detaljiVreme" style="color:#d4af37;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Klijent: <strong id="detaljiIme" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Usluga: <strong id="detaljiUsluga" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 16px; color: #a1a1aa; font-size: 13px;">Cena: <strong id="detaljiCena" style="color:#4ade80;"></strong> RSD</p>
+
+            <input type="hidden" id="otkaziDatum">
+            <input type="hidden" id="otkaziVreme">
+
+            <div class="modal-actions">
+                <button onclick="naplatiTerminIzModala()" class="btn-confirm" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
+                <button onclick="potvrdiOtkazivanjeIzModala()" class="btn-cancel" style="background:#dc2626;">🗑️ Otkaži</button>
+                <button onclick="zatvoriDetaljeKlijenta()" class="btn-cancel" style="background:#52525b;">Zatvori</button>
+            </div>
         </div>
     </div>
 
@@ -101,7 +126,7 @@
                     let dStr = formatirajDatum(d);
                     dani.push(dStr);
                     let imeDana = imenaDana[d.getDay()];
-                    headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#eee;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+                    headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#a1a1aa;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
                 }
                 d.setDate(d.getDate() + 1);
             }
@@ -146,17 +171,17 @@
                 for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
                     for (let min of [0, 30]) {
                         let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                        bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
+                        bodyHtml += `<tr><td style="font-weight:bold; background:#27272a;">${vremeSlot}</td>`;
 
                         for (let datum of dani) {
                             let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
                             if (rezervacija) {
-                                bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
+                                bodyHtml += `<td onclick="otvoriDetaljeKlijenta('${datum}', '${vremeSlot}', '${rezervacija.ime}', '${rezervacija.usluga}', '${rezervacija.cena || 0}')" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;">
                                     <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
                                     <small>${rezervacija.usluga || ''}</small>
                                 </td>`;
                             } else {
-                                bodyHtml += `<td style="color:#ccc;">-</td>`;
+                                bodyHtml += `<td style="color:#52525b;">-</td>`;
                             }
                         }
                         bodyHtml += `</tr>`;
@@ -169,7 +194,44 @@
             }
         }
 
-        // Osnovne funkcije za finansije i usluge (povezivanje sa tvojim API ruterima)
+        function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena) {
+            document.getElementById('detaljiVreme').innerText = `${datum} u ${vreme}`;
+            document.getElementById('detaljiIme').innerText = ime;
+            document.getElementById('detaljiUsluga').innerText = usluga;
+            document.getElementById('detaljiCena').innerText = cena;
+            document.getElementById('otkaziDatum').value = datum;
+            document.getElementById('otkaziVreme').value = vreme;
+            document.getElementById('detaljiKlijentaModal').style.display = 'flex';
+        }
+
+        function zatvoriDetaljeKlijenta() {
+            document.getElementById('detaljiKlijentaModal').style.display = 'none';
+        }
+
+        async function naplatiTerminIzModala() {
+            const datum = document.getElementById('otkaziDatum').value;
+            const vreme = document.getElementById('otkaziVreme').value;
+            await fetch('/api/otkazi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ datum: datum, vreme: vreme })
+            });
+            zatvoriDetaljeKlijenta();
+            ucitajNedelju();
+        }
+
+        async function potvrdiOtkazivanjeIzModala() {
+            const datum = document.getElementById('otkaziDatum').value;
+            const vreme = document.getElementById('otkaziVreme').value;
+            await fetch('/api/otkazi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ datum: datum, vreme: vreme })
+            });
+            zatvoriDetaljeKlijenta();
+            ucitajNedelju();
+        }
+
         async function ucitajUslugeAdmin() {
             try {
                 let res = await fetch('/api/usluge');
@@ -177,13 +239,13 @@
                 let html = '<ul>';
                 if (Array.isArray(usluge)) {
                     usluge.forEach(u => {
-                        html += `<li><b>${u.naziv}</b> - ${u.cena} RSD (${u.trajanje} min)</li>`;
+                        html += `<li style="margin-bottom: 5px;"><b>${u.naziv}</b> - ${u.cena} RSD (${u.trajanje} min)</li>`;
                     });
                 }
                 html += '</ul>';
                 document.getElementById('listaUslugaAdmin').innerHTML = html;
             } catch (e) {
-                console.error("Greška pri učitavanju usluga:", e);
+                console.error("Greška usluge:", e);
             }
         }
 
@@ -191,18 +253,12 @@
             let naziv = document.getElementById('novaUslugaNaziv').value;
             let cena = document.getElementById('novaUslugaCena').value;
             let trajanje = document.getElementById('novaUslugaTrajanje').value;
-
-            if (!naziv || !cena) {
-                alert("Unesi naziv i cenu!");
-                return;
-            }
-
+            if (!naziv || !cena) { alert("Unesi naziv i cenu!"); return; }
             await fetch('/api/usluge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ naziv, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
-
             document.getElementById('novaUslugaNaziv').value = '';
             document.getElementById('novaUslugaCena').value = '';
             document.getElementById('novaUslugaTrajanje').value = '';
@@ -212,22 +268,16 @@
         async function izracunajFinansije() {
             let odDatuma = document.getElementById('finansijeOd').value;
             let doDatuma = document.getElementById('finansijeDo').value;
-            if(!odDatuma || !doDatuma) {
-                alert("Izaberi oba datuma za finansije!");
-                return;
-            }
+            if(!odDatuma || !doDatuma) { alert("Izaberi oba datuma!"); return; }
             try {
                 let res = await fetch(`/api/finansije?od=${odDatuma}&do=${doDatuma}`);
                 let data = await res.json();
                 document.getElementById('finansijeInfo').innerText = `Ukupan promet: ${data.ukupno || 0} RSD`;
-            } catch(e) {
-                console.error("Greška finansije:", e);
-            }
+            } catch(e) { console.error("Greška finansije:", e); }
         }
 
-        // Pokretanje pri učitavanju stranice
-        ucitajNedelju();
-        ucitajUslugeAdmin();
+        try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
+        try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
     </script>
 </body>
 </html>
