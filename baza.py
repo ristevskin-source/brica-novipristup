@@ -250,7 +250,6 @@ def api_nedelja():
     pocetak = request.args.get('pocetak')
     kraj = request.args.get('kraj')
     
-    # Ako admin panel pošalje offset umesto tačnih datuma, izračunaj datume automatski
     if not pocetak or not kraj:
         try:
             offset = int(request.args.get('offset', 0))
