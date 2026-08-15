@@ -182,21 +182,13 @@ def api_usluge():
         conn.close()
         return jsonify({'status': 'ok'})
 
-@app.route('/api/raspored_nedelja', methods=['GET'])
-def api_raspored_nedelja():
-    pocetak = request.args.get('pocetak')
-    kraj = request.args.get('kraj')
-    if not pocetak or not kraj:
-        return jsonify({'poruka': 'Nedostaju parametri'}), 400
-    return jsonify(get_raspored_za_period(pocetak, kraj))
-
 @app.route('/api/zakazi', methods=['POST'])
 def api_zakazi():
     data = request.get_json()
     datum = data.get('datum')
     vreme = data.get('vreme')
     
-    # 1. Provera: Blokada zakazivanja nedeljom (6 = nedelja)
+    # 1. Provera: Nedeljom ne radimo (6 = nedelja)
     dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
     if dt_zakazi.weekday() == 6:
         return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
@@ -227,36 +219,6 @@ def api_zakazi():
     conn.close()
     return jsonify({'status': 'ok'})
 
-    ime = data.get('ime')
-    telefon = data.get('telefon')
-    usluga = data.get('usluga')
-    cena = data.get('cena')
-    
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-    """, (datum, vreme, ime, telefon, usluga, cena))
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
-
-    ime = data.get('ime')
-    telefon = data.get('telefon')
-    usluga = data.get('usluga')
-    cena = data.get('cena')
-    
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-    """, (datum, vreme, ime, telefon, usluga, cena))
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
-
 @app.route('/api/naplati', methods=['POST'])
 def api_naplati():
     data = request.json
@@ -266,16 +228,13 @@ def api_naplati():
     usluga = data.get('usluga', '')
     cena = data.get('cena', 0)
     
-    # 1. Beležimo zaradu
     zabelezi_naplatu(datum, vreme, ime, usluga, cena)
     
-    # 2. Brišemo zauzet termin iz rezervacija
     conn = get_connection()
     c = conn.cursor()
     c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
     conn.commit()
     conn.close()
-    
     return jsonify({"status": "ok"})
 
 @app.route('/api/statistika', methods=['GET'])
