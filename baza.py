@@ -239,7 +239,6 @@ def api_naplati():
     conn.close()
     
     return jsonify({"status": "ok"})
-    return jsonify({"status": "ok"})
 
 @app.route('/api/statistika', methods=['GET'])
 def api_statistika():
