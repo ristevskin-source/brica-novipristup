@@ -35,99 +35,96 @@
     <script>
         let trenutniPocetniDan = new Date();
 
-        function formatirajDatum(d) {
-            return d.toISOString().split('T')[0];
-        }
+    function formatirajDatum(d) {
+        return d.toISOString().split('T')[0];
+    }
 
-        async function ucitajNedelju() {
-            let dani = [];
-            let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-            let headerRow = '<th>Vreme</th>';
-            
-            let d = new Date(trenutniPocetniDan);
-            while(dani.length < 6) {
-                if (d.getDay() !== 0) {
-                    let dStr = formatirajDatum(d);
-                    dani.push(dStr);
-                    let imeDana = imenaDana[d.getDay()];
-                    headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
-                }
-                d.setDate(d.getDate() + 1);
+    function promeniNedelju(smer) {
+        trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
+        ucitajNedelju();
+    }
+
+    async function ucitajNedelju() {
+        let dani = [];
+        let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+        let headerRow = '<th>Vreme</th>';
+        
+        let d = new Date(trenutniPocetniDan);
+        while(dani.length < 6) {
+            if (d.getDay() !== 0) {
+                let dStr = formatirajDatum(d);
+                dani.push(dStr);
+                let imeDana = imenaDana[d.getDay()];
+                headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
             }
-            document.getElementById('zaglavljeTabele').innerHTML = headerRow;
+            d.setDate(d.getDate() + 1);
+        }
+        document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
-            let prviDan = dani[0];
-            let poslednjiDan = dani[dani.length - 1];
-            document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
+        let prviDan = dani[0];
+        let poslednjiDan = dani[dani.length - 1];
+        document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
-            try {
-                let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
-                let podaci = await res.json();
-                
-                console.log("PODACI SA SERVERA:", podaci);
-                console.log("DANI KOJI SE TRAŽE:", dani);
-                
-                let zauzetiBlokovi = {};
-                if (podaci) {
-                    Object.keys(podaci).forEach(datum => {
-                        Object.keys(podaci[datum]).forEach(vreme => {
-                            let klijent = podaci[datum][vreme];
-                            if (klijent) {
-                                let trajanje = klijent.trajanje || 30;
-                                let [h, m] = vreme.split(':').map(Number);
-                                let ukupnoSlotova = Math.ceil(trajanje / 30);
-                                for (let i = 0; i < ukupnoSlotova; i++) {
-                                    let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                                    if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
-                                    zauzetiBlokovi[datum][slotVreme] = klijent;
-                                    m += 30;
-                                    if (m >= 60) {
-                                        h += 1;
-                                        m -= 60;
-                                    }
+        try {
+            let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+            let podaci = await res.json();
+            
+            let zauzetiBlokovi = {};
+            if (podaci) {
+                Object.keys(podaci).forEach(datum => {
+                    Object.keys(podaci[datum]).forEach(vreme => {
+                        let klijent = podaci[datum][vreme];
+                        if (klijent) {
+                            let trajanje = klijent.trajanje || 30;
+                            let [h, m] = vreme.split(':').map(Number);
+                            let ukupnoSlotova = Math.ceil(trajanje / 30);
+                            for (let i = 0; i < ukupnoSlotova; i++) {
+                                let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
+                                zauzetiBlokovi[datum][slotVreme] = klijent;
+                                m += 30;
+                                if (m >= 60) {
+                                    h += 1;
+                                    m -= 60;
                                 }
                             }
-                        });
-                    });
-                }
-
-                let bodyHtml = '';
-                let pocetniSat = 8;
-                let krajnjiSat = 20;
-
-                for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
-                    for (let min of [0, 30]) {
-                        let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                        bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
-
-                        for (let datum of dani) {
-                            let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
-                            if (rezervacija) {
-                                bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
-                                    <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
-                                    <small>${rezervacija.usluga || ''}</small>
-                                </td>`;
-                            } else {
-                                bodyHtml += `<td style="color:#ccc;">-</td>`;
-                            }
                         }
-                        bodyHtml += `</tr>`;
-                    }
-                }
-                document.getElementById('teloTabele').innerHTML = bodyHtml;
-
-            } catch (err) {
-                console.error("Greška pri učitavanju nedelje:", err);
+                    });
+                });
             }
-        }
 
-        function promeniNedelju(smer) {
-            trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
-            ucitajNedelju();
-        }
+            let bodyHtml = '';
+            let pocetniSat = 8;
+            let krajnjiSat = 20;
 
-        // Pokretanje pri učitavanju
-        ucitajNedelju();
+            for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
+                for (let min of [0, 30]) {
+                    let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                    bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
+
+                    for (let datum of dani) {
+                        let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
+                        if (rezervacija) {
+                            bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
+                                <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
+                                <small>${rezervacija.usluga || ''}</small>
+                            </td>`;
+                        } else {
+                            bodyHtml += `<td style="color:#ccc;">-</td>`;
+                        }
+                    }
+                    bodyHtml += `</tr>`;
+                }
+            }
+            document.getElementById('teloTabele').innerHTML = bodyHtml;
+
+        } catch (err) {
+            console.error("Greška pri učitavanju nedelje:", err);
+        }
+    }
+
+    try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
+    try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
     </script>
 </body>
 </html>
