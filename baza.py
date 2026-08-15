@@ -250,6 +250,20 @@ def api_nedelja():
     pocetak = request.args.get('pocetak')
     kraj = request.args.get('kraj')
     
+    # Ako admin panel pošalje offset umesto tačnih datuma, izračunaj datume automatski
+    if not pocetak or not kraj:
+        try:
+            offset = int(request.args.get('offset', 0))
+        except ValueError:
+            offset = 0
+            
+        danas = datetime.now()
+        ponedeljak = danas - timedelta(days=danas.weekday()) + timedelta(weeks=offset)
+        nedelja = ponedeljak + timedelta(days=6)
+        
+        pocetak = ponedeljak.strftime('%Y-%m-%d')
+        kraj = nedelja.strftime('%Y-%m-%d')
+
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
