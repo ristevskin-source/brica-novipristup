@@ -218,14 +218,13 @@
                     let klijent = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vreme] ? zauzetiBlokovi[datum][vreme] : null;
                     
                     if(klijent) {
-                        tbody += '<td class="slot-booked">' +
-                            '<div class="name">' + (klijent.ime || 'Zauzeto') + '</div>' +
-                            '<div class="detail">' + (klijent.usluga || '') + ' (' + (klijent.cena || 0) + ' RSD)</div>' +
-                            '<button class="btn-free" onclick="oslobodiTermin(\'' + datum + '\', \'' + vreme + '\')">Oslobodi</button>' +
-                        '</td>';
-                    } else {
-                        tbody += '<td class="slot-free" onclick="otvoriZakazivanje(\'' + datum + '\', \'' + vreme + '\')">+ Zakazi</td>';
-                    }
+                    tbody += `<td class="slot-booked" onclick="otvoriDetaljeKlijenta('${datum}', '${vreme}', '${klijent.ime || ''}', '${klijent.usluga || ''}', '${klijent.cena || 0}')">
+                        <div class="name">${klijent.ime || 'Zauzeto'}</div>
+                        <div class="detail">${klijent.usluga || ''} (${klijent.cena || 0} RSD)</div>
+                    </td>`;
+                } else {
+                    tbody += `<td class="slot-free" onclick="otvoriZakazivanje('${datum}', '${vreme}')">+ Zakazi</td>`;
+                }
                 });
                 tbody += '</tr>';
             });
