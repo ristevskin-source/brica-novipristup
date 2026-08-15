@@ -252,13 +252,13 @@ def api_nedelja():
     
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status, trajanje FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
+    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
     rezervacije = c.fetchall()
     conn.close()
     
     raspored = {}
     for r in rezervacije:
-        datum, vreme, ime, usluga, cena, telefon, status, trajanje = r
+        datum, vreme, ime, usluga, cena, telefon, status = r
         if datum not in raspored:
             raspored[datum] = {}
         raspored[datum][vreme] = {
@@ -267,7 +267,7 @@ def api_nedelja():
             'cena': cena,
             'telefon': telefon,
             'status': status,
-            'trajanje': trajanje or 30
+            'trajanje': 30
         }
         
     return jsonify(raspored)
