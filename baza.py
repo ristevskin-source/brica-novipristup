@@ -1,9 +1,9 @@
 import sqlite3
+from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-DB_NAME = 'brica.db'
+DB_NAME = "brica.db"
 
 def get_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -13,119 +13,96 @@ def get_connection():
 def init_db():
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
+    
+    # Tabela usluga
+    c.execute("""
         CREATE TABLE IF NOT EXISTS usluge (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ime TEXT NOT NULL,
             cena INTEGER NOT NULL,
-            trajanje INTEGER NOT NULL
+            trajanje INTEGER DEFAULT 30
         )
-    ''')
-    c.execute("SELECT COUNT(*) FROM usluge")
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje', 1000, 30)")
-        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Brada / Brijanje', 600, 30)")
-        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje + Brada', 1500, 45)")
-
-    c.execute('''
+    """)
+    
+    # Tabela rezervacija
+    c.execute("""
         CREATE TABLE IF NOT EXISTS rezervacije (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             datum TEXT NOT NULL,
             vreme TEXT NOT NULL,
-            ime TEXT,
-            telefon TEXT,
-            usluga TEXT,
-            cena INTEGER,
-            status TEXT DEFAULT 'slobodan'
+            ime TEXT NOT NULL,
+            telefon TEXT NOT NULL,
+            usluga TEXT NOT NULL,
+            cena INTEGER NOT NULL,
+            trajanje INTEGER DEFAULT 30,
+            status TEXT DEFAULT 'zauzet'
         )
-    ''')
+    """)
+    
+    # Ubacivanje podrazumevanih usluga ako je tabela prazna
+    c.execute("SELECT COUNT(*) FROM usluge")
+    if c.fetchone()[0] == 0:
+        c.executemany("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", [
+            ('Šišanje', 1000, 30),
+            ('Šišanje + Brada', 1500, 60),
+            ('Brada', 600, 30)
+        ])
+        
     conn.commit()
     conn.close()
 
 init_db()
 
-def get_slotovi_za_datum(datum_str):
+def get_raspored_za_period(pocetak_str, kraj_str):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM rezervacije WHERE datum = ?", (datum_str,))
+    c.execute("""
+        SELECT datum, vreme, ime, usluga, cena, trajanje, status 
+        FROM rezervacije 
+        WHERE datum >= ? AND datum <= ?
+    """, (pocetak_str, kraj_str))
+    
     rows = c.fetchall()
     conn.close()
-    return [dict(row) for row in rows]
-
-def get_raspored_za_period(pocetak_str, kraj_str):
-    pocetak_dt = datetime.strptime(pocetak_str, "%Y-%m-%d")
-    kraj_dt = datetime.strptime(kraj_str, "%Y-%m-%d")
     
     rezultat = {}
-    trenutni = pocetak_dt
-    while trenutni <= kraj_dt:
-        d_str = trenutni.strftime("%Y-%m-%d")
-        slotovi = get_slotovi_za_datum(d_str)
-        rezultat[d_str] = {}
-        for s in slotovi:
-            if s.get('status') == 'zakazan':
-                rezultat[d_str][s['vreme']] = {
-                    "status": "zauzet",
-                    "ime": s.get('ime', ''),
-                    "usluga": s.get('usluga', ''),
-                    "cena": s.get('cena', 0)
-                }
-        trenutni += timedelta(days=1)
+    for r in rows:
+        datum = r["datum"]
+        vreme = r["vreme"]
+        if datum not in rezultat:
+            rezultat[datum] = {}
+            
+        rezultat[datum][vreme] = {
+            "status": "zauzet",
+            "ime": r["ime"],
+            "usluga": r["usluga"],
+            "cena": r["cena"],
+            "trajanje": r["trajanje"] if r["trajanje"] else 30
+        }
     return rezultat
 
-# --- FLASK RUTE ---
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/admin')
-def admin():
-    return render_template('admin.html')
-
-@app.route('/api/slotovi/<datum>', methods=['GET'])
-def api_slotovi(datum):
+@app.route('/api/slobodni_slotovi', methods=['GET'])
+def api_slobodni_slotovi():
+    datum = request.args.get('datum')
+    if not datum:
+        return jsonify({'poruka': 'Nedostaje datum'}), 400
+        
     conn = get_connection()
     c = conn.cursor()
-    
-    # Uzimamo zakazane termine i trajanje usluge u minutima
-    c.execute("""
-        SELECT r.vreme, COALESCE(u.trajanje, 30) as trajanje 
-        FROM rezervacije r 
-        LEFT JOIN usluge u ON r.usluga = u.ime 
-        WHERE r.datum = ? AND r.status = 'zakazan'
-    """, (datum,))
-    
-    rezervacije = c.fetchall()
+    c.execute("SELECT vreme FROM rezervacije WHERE datum = ?", (datum,))
+    zauzeti_slotovi = [row['vreme'] for row in c.fetchall()]
     conn.close()
-
-    # Pravimo skup svih blokova koji moraju biti blokirani na osnovu trajanja
-    zauzeti_slotovi = set()
-    for r in rezervacije:
-        pocetak = datetime.strptime(r['vreme'], "%H:%M")
-        trajanje = int(r['trajanje'])
-        
-        # Svi blokovi od po 30 min dok ne prođe celo trajanje usluge
-        trenutni = pocetak
-        kraj = pocetak + timedelta(minutes=trajanje)
-        while trenutni < kraj:
-            zauzeti_slotovi.add(trenutni.strftime("%H:%M"))
-            trenutni += timedelta(minutes=30)
-
-    # Generišemo termine od 09:00 do 20:00
+    
     svi_slotovi = []
-    start = datetime.strptime("09:00", "%H:%M")
+    start = datetime.strptime("08:00", "%H:%M")
     end = datetime.strptime("20:00", "%H:%M")
     
     while start < end:
         vreme_str = start.strftime("%H:%M")
         status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
-        svi_slotovi.append({
-            'vreme': vreme_str,
-            'status': status
-        })
+        svi_slotovi.append({'vreme': vreme_str, 'status': status})
         start += timedelta(minutes=30)
-
+        
     return jsonify(svi_slotovi)
 
 @app.route('/api/usluge', methods=['GET', 'POST'])
@@ -141,7 +118,8 @@ def api_usluge():
         data = request.get_json()
         ime = data.get('ime')
         cena = data.get('cena')
-        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, 30)", (ime, cena))
+        trajanje = data.get('trajanje', 30)
+        c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
         conn.commit()
         conn.close()
         return jsonify({'status': 'ok'})
@@ -163,13 +141,20 @@ def api_zakazi():
     telefon = data.get('telefon')
     usluga = data.get('usluga')
     cena = data.get('cena')
-
+    
     conn = get_connection()
     c = conn.cursor()
+    
+    # Saznajemo trajanje usluge iz baze
+    c.execute("SELECT trajanje FROM usluge WHERE ime = ?", (usluga,))
+    u_row = c.fetchone()
+    trajanje = u_row['trajanje'] if u_row else 30
+    
     c.execute("""
-        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-    """, (datum, vreme, ime, telefon, usluga, cena))
+        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, trajanje, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'zauzet')
+    """, (datum, vreme, ime, telefon, usluga, cena, trajanje))
+    
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok'})
@@ -179,7 +164,7 @@ def api_otkazi():
     data = request.get_json()
     datum = data.get('datum')
     vreme = data.get('vreme')
-
+    
     conn = get_connection()
     c = conn.cursor()
     c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
