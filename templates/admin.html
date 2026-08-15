@@ -236,12 +236,13 @@
                 dani.forEach(datum => {
                     let klijent = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vreme] ? zauzetiBlokovi[datum][vreme] : null;
                     
-                    if(klijent) {
-                    tbody += `<td class="slot-booked" onclick="otvoriDetaljeKlijenta('${datum}', '${vreme}', '${klijent.ime || ''}', '${klijent.usluga || ''}', '${klijent.cena || 0}')">
-                        <div class="name">${klijent.ime || 'Zauzeto'}</div>
-                        <div class="detail">${klijent.usluga || ''} (${klijent.cena || 0} RSD)</div>
-                    </td>`;
-                } else {
+                    if (klijent) {
+                        let tel = klijent.telefon || klijent.tel || '';
+                        tbody += `<td class="slot-booked" onclick="otvoriDetaljeKlijenta('${datum}', '${vreme}', '${klijent.ime || ''}', '${klijent.usluga || ''}', '${klijent.cena || 0}', '${tel}')">
+                            <div class="name">${klijent.ime || 'Zauzeto'}</div>
+                            <div class="detail">${klijent.usluga || ''} (${klijent.cena || 0} RSD)</div>
+                        </td>`;
+                    } else {
                     tbody += `<td class="slot-free" onclick="otvoriZakazivanje('${datum}', '${vreme}')">+ Zakazi</td>`;
                 }
                 });
@@ -388,11 +389,11 @@
         }
     }
 
-    function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena) {
+    function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena, tel) {
         document.getElementById('otkaziDatum').value = datum;
         document.getElementById('otkaziVreme').value = vreme;
         document.getElementById('detaljiVreme').innerText = `${datum} u ${vreme}`;
-        document.getElementById('detaljiIme').innerText = ime || 'Nije uneseno';
+        document.getElementById('detaljiIme').innerText = ime ? `${ime} ${tel ? '(' + tel + ')' : ''}` : 'Nije uneseno';
         document.getElementById('detaljiUsluga').innerText = usluga || 'Nije uneseno';
         document.getElementById('detaljiCena').innerText = cena || '0';
         
