@@ -39,8 +39,49 @@ def init_db():
             status TEXT DEFAULT 'zakazan'
         )
     ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS naplate (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            datum TEXT NOT NULL,
+            vreme TEXT NOT NULL,
+            klijent TEXT,
+            usluga TEXT,
+            cena INTEGER NOT NULL,
+            kreirano TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
+
+def zabelezi_naplatu(datum, vreme, klijent, usluga, cena):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO naplate (datum, vreme, klijent, usluga, cena)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (datum, vreme, klijent, usluga, cena))
+    conn.commit()
+    conn.close()
+
+def uzmi_statistiku_zarade():
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # Dnevna zarada
+    c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE datum = DATE('now')")
+    danas = c.fetchone()[0]
+    
+    # Mesečna zarada
+    c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y-%m', datum) = strftime('%Y-%m', 'now')")
+    mesec = c.fetchone()[0]
+
+    # Godišnja zarada
+    c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y', datum) = strftime('%Y', 'now')")
+    godina = c.fetchone()[0]
+    
+    conn.close()
+    return {"danas": danas, "mesec": mesec, "godina": godina}
 
 init_db()
 
