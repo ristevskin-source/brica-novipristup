@@ -215,9 +215,33 @@
     let poslednjiDan = dani[dani.length - 1];
     document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
+    async function ucitajNedelju() {
+    let dani = [];
+    let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+    let headerRow = '<th>Vreme</th>';
+    
+    let d = new Date(trenutniPocetniDan);
+    while(dani.length < 6) {
+        if (d.getDay() !== 0) {
+            let dStr = formatirajDatum(d);
+            dani.push(dStr);
+            let imeDana = imenaDana[d.getDay()];
+            headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+        }
+        d.setDate(d.getDate() + 1);
+    }
+    document.getElementById('zaglavljeTabele').innerHTML = headerRow;
+
+    let prviDan = dani[0];
+    let poslednjiDan = dani[dani.length - 1];
+    document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
+
     try {
         let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
         let podaci = await res.json();
+        
+        console.log("PODACI SA SERVERA:", podaci);
+        console.log("DANI KOJI SE TRAŽE:", dani);
         
         let zauzetiBlokovi = {};
         if (podaci) {
@@ -243,7 +267,6 @@
             });
         }
 
-        // Generisanje redova tabele po satima (od 08:00 do 20:00)
         let bodyHtml = '';
         let pocetniSat = 8;
         let krajnjiSat = 20;
@@ -272,12 +295,14 @@
     } catch (err) {
         console.error("Greška pri učitavanju nedelje:", err);
     }
+}
 
-    async function otvoriZakazivanje(datum, vreme) {
-        document.getElementById('adminDatum').value = datum;
-        document.getElementById('adminVreme').value = vreme;
-        document.getElementById('adminIme').value = '';
-        document.getElementById('adminTel').value = '';
+async function otvoriZakazivanje(datum, vreme) {
+    document.getElementById('adminDatum').value = datum;
+    document.getElementById('adminVreme').value = vreme;
+    document.getElementById('adminIme').value = '';
+    document.getElementById('adminTel').value = '';
+}
         try {
             let res = await fetch('/api/usluge');
             let usluge = await res.json();
