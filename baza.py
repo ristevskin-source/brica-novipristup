@@ -192,6 +192,12 @@ def api_zakazi():
     datum = data.get('datum')
     vreme = data.get('vreme')
     
+    @app.route('/api/zakazi', methods=['POST'])
+def api_zakazi():
+    data = request.get_json()
+    datum = data.get('datum')
+    vreme = data.get('vreme')
+    
     # --- PROVERA: Sprečavanje zakazivanja u prošlosti ---
     danas_str = datetime.now().strftime('%Y-%m-%d')
     if datum < danas_str:
@@ -202,6 +208,21 @@ def api_zakazi():
         if vreme < trenutno_vreme:
             return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
     # ----------------------------------------------------
+
+    ime = data.get('ime')
+    telefon = data.get('telefon')
+    usluga = data.get('usluga')
+    cena = data.get('cena')
+    
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
+    """, (datum, vreme, ime, telefon, usluga, cena))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
 
     ime = data.get('ime')
     telefon = data.get('telefon')
