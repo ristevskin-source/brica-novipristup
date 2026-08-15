@@ -228,9 +228,17 @@ def api_naplati():
     usluga = data.get('usluga', '')
     cena = data.get('cena', 0)
     
+    # 1. Beležimo zaradu
     zabelezi_naplatu(datum, vreme, ime, usluga, cena)
-    otkazi_termin(datum, vreme)
     
+    # 2. Brišemo zauzet termin iz rezervacija
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "ok"})
     return jsonify({"status": "ok"})
 
 @app.route('/api/statistika', methods=['GET'])
