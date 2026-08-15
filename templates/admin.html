@@ -369,14 +369,9 @@
         }
     }
 
-    async function obrisiUslugu(id) {
-        if (!confirm('⚠️ Da li ste sigurni da želite da obrišete ovu uslugu?')) return;
-        try {
-            const res = await fetch('/api/usluge/' + id, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Greška pri brisanju');
-            ucitajUslugeAdmin();
-        } catch (error) {
-            alert('❌ Greška: ' + error.message);
+    function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena) {
+        if (confirm(`TERMIN: ${datum} u ${vreme}\nKlijent: ${ime}\nUsluga: ${usluga}\nCena: ${cena} RSD\n\nDa li želite da otkažete/oslobodite ovaj termin?`)) {
+            oslobodiTermin(datum, vreme);
         }
     }
 
