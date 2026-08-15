@@ -1,8 +1,6 @@
 from flask import request, jsonify
-from baza import app
+from baza import app, zabelezi_naplatu, uzmi_statistiku_zarade, get_connection
 
-if __name__ == '__main__':
-    app.run()
 @app.route('/api/naplati', methods=['POST'])
 def api_naplati():
     data = request.json
@@ -12,11 +10,15 @@ def api_naplati():
     usluga = data.get('usluga', '')
     cena = data.get('cena', 0)
     
-    # 1. Upisujemo u naplate
+    # 1. Beležimo zaradu
     zabelezi_naplatu(datum, vreme, ime, usluga, cena)
     
-    # 2. Oslobađamo termin iz rasporeda
-    otkazi_termin(datum, vreme)
+    # 2. Brišemo termin iz baze
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+    conn.commit()
+    conn.close()
     
     return jsonify({"status": "ok"})
 
