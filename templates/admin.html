@@ -2,7 +2,7 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel - Rezervacije</title>
+    <title>Admin Panel - Rezervacije i Usluge</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #121212; color: #e0e0e0; }
         h1, h2, h3 { color: #ffffff; }
@@ -25,6 +25,9 @@
         
         #finansijeInfo { font-size: 18px; font-weight: bold; color: #4ade80; margin-top: 10px; }
 
+        /* Stilovi za listu usluga sa dugmićima */
+        .usluga-item { display: flex; justify-content: space-between; align-items: center; background: #27272a; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #3f3f46; }
+
         /* Modal stilovi */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
         .modal-content { background: #1e1e1e; padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #3f3f46; }
@@ -33,7 +36,7 @@
 </head>
 <body>
 
-    <h1>Admin Panel - Rezervacije</h1>
+    <h1>Admin Panel - Upravljanje</h1>
     
     <!-- SEKCIJA: Kalendar i Nedelja -->
     <div class="section">
@@ -69,9 +72,9 @@
 
     <!-- SEKCIJA: Upravljanje uslugama i cenama -->
     <div class="section">
-        <h2>Usluge i Cene</h2>
-        <div id="listaUslugaAdmin" style="margin-bottom: 15px;">
-            <!-- Ovde se ucitavaju postojeće usluge -->
+        <h2>Usluge, Cene i Trajanje</h2>
+        <div id="listaUslugaAdmin" style="margin-bottom: 20px;">
+            <p style="color: #a1a1aa;">Učitavanje usluga...</p>
         </div>
         
         <h3>Dodaj novu uslugu</h3>
@@ -232,43 +235,97 @@
             ucitajNedelju();
         }
 
+        // Usluge: Učitavanje sa servera i prikaz
         async function ucitajUslugeAdmin() {
             try {
                 let res = await fetch('/api/usluge');
                 let usluge = await res.json();
-                let html = '<ul>';
-                if (Array.isArray(usluge)) {
-                    usluge.forEach(u => {
-                        html += `<li style="margin-bottom: 5px;"><b>${u.naziv}</b> - ${u.cena} RSD (${u.trajanje} min)</li>`;
-                    });
+                let kontejner = document.getElementById('listaUslugaAdmin');
+                
+                if (!usluge || usluge.length === 0) {
+                    kontejner.innerHTML = '<p style="color: #a1a1aa;">Nema unetih usluga.</p>';
+                    return;
                 }
-                html += '</ul>';
-                document.getElementById('listaUslugaAdmin').innerHTML = html;
+
+                let html = '';
+                usluge.forEach(u => {
+                    let nazivUsluge = u.naziv || u.ime || '';
+                    html += `
+                        <div class="usluga-item">
+                            <div>
+                                <strong style="color: #fff; font-size: 15px;">${nazivUsluge}</strong><br>
+                                <span style="color: #4ade80;">${u.cena} RSD</span> &bull; <span style="color: #a1a1aa;">${u.trajanje || 30} min</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="izmeniUslugu('${nazivUsluge}', ${u.cena}, ${u.trajanje || 30})" style="background: #ca8a04; padding: 5px 10px; font-size: 12px;">Izmeni</button>
+                                <button onclick="obrisiUslugu('${nazivUsluge}')" style="background: #dc2626; padding: 5px 10px; font-size: 12px;">Obriši</button>
+                            </div>
+                        </div>`;
+                });
+                kontejner.innerHTML = html;
             } catch (e) {
-                console.error("Greška usluge:", e);
+                console.error("Greška pri učitavanju usluga:", e);
+                document.getElementById('listaUslugaAdmin').innerHTML = '<p style="color: #f87171;">Greška pri učitavanju usluga sa servera.</p>';
             }
         }
 
         async function dodajUslugu() {
-            let naziv = document.getElementById('novaUslugaNaziv').value;
+            let naziv = document.getElementById('novaUslugaNaziv').value.trim();
             let cena = document.getElementById('novaUslugaCena').value;
             let trajanje = document.getElementById('novaUslugaTrajanje').value;
-            if (!naziv || !cena) { alert("Unesi naziv i cenu!"); return; }
+            
+            if (!naziv || !cena) { 
+                alert("Unesi naziv i cenu usluge!"); 
+                return; 
+            }
+
             await fetch('/api/usluge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ naziv, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
+
             document.getElementById('novaUslugaNaziv').value = '';
             document.getElementById('novaUslugaCena').value = '';
             document.getElementById('novaUslugaTrajanje').value = '';
             ucitajUslugeAdmin();
         }
 
+        async function obrisiUslugu(naziv) {
+            if (!confirm(`Da li si siguran da želiš da obrišeš uslugu: ${naziv}?`)) return;
+            
+            await fetch('/api/usluge', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ naziv })
+            });
+            ucitajUslugeAdmin();
+        }
+
+        function izmeniUslugu(naziv, trenutnaCena, trenutnoTrajanje) {
+            let novaCena = prompt(`Unesi novu cenu za uslugu "${naziv}":`, trenutnaCena);
+            if (novaCena === null) return;
+            let novoTrajanje = prompt(`Unesi novo trajanje u minutima za uslugu "${naziv}":`, trenutnoTrajanje);
+            if (novoTrajanje === null) return;
+
+            // Ponovo šaljemo kao POST/PUT da ažuriramo bazu
+            fetch('/api/usluge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    naziv: naziv, 
+                    cena: Number(novaCena), 
+                    trajanje: Number(novoTrajanje || 30) 
+                })
+            }).then(() => {
+                ucitajUslugeAdmin();
+            });
+        }
+
         async function izracunajFinansije() {
             let odDatuma = document.getElementById('finansijeOd').value;
             let doDatuma = document.getElementById('finansijeDo').value;
-            if(!odDatuma || !doDatuma) { alert("Izaberi oba datuma!"); return; }
+            if(!odDatuma || !doDatuma) { alert("Izaberi oba datuma za finansije!"); return; }
             try {
                 let res = await fetch(`/api/finansije?od=${odDatuma}&do=${doDatuma}`);
                 let data = await res.json();
@@ -276,6 +333,7 @@
             } catch(e) { console.error("Greška finansije:", e); }
         }
 
+        // Pokretanje
         ucitajNedelju();
         ucitajUslugeAdmin();
     </script>
