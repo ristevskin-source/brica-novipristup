@@ -1,6 +1,8 @@
 from flask import request, jsonify
-from baza import app, zabelezi_naplatu, otkazi_termin, uzmi_statistiku_zarade
+from baza import app
 
+if __name__ == '__main__':
+    app.run()
 @app.route('/api/naplati', methods=['POST'])
 def api_naplati():
     data = request.json
