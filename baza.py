@@ -87,18 +87,39 @@ def admin():
 def api_slotovi(datum):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT vreme, status FROM rezervacije WHERE datum = ?", (datum,))
-    zauzeti = {row['vreme']: row['status'] for row in c.fetchall()}
+    
+    # Uzimamo zakazane termne i trajanje usluge za svaki termin
+    c.execute("""
+        SELECT r.vreme, COALESCE(u.trajanje, 30) as trajanje 
+        FROM rezervacije r 
+        LEFT JOIN usluge u ON r.usluga = u.ime 
+        WHERE r.datum = ? AND r.status = 'zakazan'
+    """, (datum,))
+    
+    rezervacije = c.fetchall()
     conn.close()
 
-    # Generišemo standardne radne termine od 09:00 do 20:00 na 30 min
+    # Pravimo skup svih blokova koji su zauzeti (uključujući i blokove koje zahvata trajanje)
+    zauzeti_slotovi = set()
+    for r in rezervacije:
+        pocetak = datetime.strptime(r['vreme'], "%H:%M")
+        trajanje = int(r['trajanje'])
+        
+        # Prolazimo kroz sve blokove od po 30 minuta unutar trajanja usluge
+        trenutni = pocetak
+        kraj = pocetak + timedelta(minutes=trajanje)
+        while trenutni < kraj:
+            zauzeti_slotovi.add(trenutni.strftime("%H:%M"))
+            trenutni += timedelta(minutes=30)
+
+    # Generišemo termine od 09:00 do 20:00
     svi_slotovi = []
     start = datetime.strptime("09:00", "%H:%M")
     end = datetime.strptime("20:00", "%H:%M")
     
     while start < end:
         vreme_str = start.strftime("%H:%M")
-        status = zauzeti.get(vreme_str, 'slobodan')
+        status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
         svi_slotovi.append({
             'vreme': vreme_str,
             'status': status
