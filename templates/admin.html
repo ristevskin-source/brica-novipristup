@@ -180,13 +180,44 @@
         try {
             let res = await fetch('/api/raspored_nedelja?pocetak=' + prviDan + '&kraj=' + poslednjiDan);
             let podaci = await res.json();
+            
+            // Pravimo mapu zauzetih blokova na osnovu trajanja usluge
+            let zauzetiBlokovi = {};
+            
+            if (podaci) {
+                Object.keys(podaci).forEach(datum => {
+                    Object.keys(podaci[datum]).forEach(vreme => {
+                        let klijent = podaci[datum][vreme];
+                        if (klijent && klijent.status === 'zauzet') {
+                            let trajanje = klijent.trajanje || 30;
+                            let [h, m] = vreme.split(':').map(Number);
+                            let ukupnoSlotova = Math.ceil(trajanje / 30);
+
+                            for (let i = 0; i < ukupnoSlotova; i++) {
+                                let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
+                                zauzetiBlokovi[datum][slotVreme] = klijent;
+
+                                m += 30;
+                                if (m >= 60) {
+                                    h += 1;
+                                    m -= 60;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
             let sati = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
             let tbody = '';
+            
             sati.forEach(vreme => {
                 tbody += '<tr><td><span class="time-label">' + vreme + '</span></td>';
                 dani.forEach(datum => {
-                    let klijent = podaci[datum] && podaci[datum][vreme] ? podaci[datum][vreme] : null;
-                    if(klijent && klijent.status === 'zauzet') {
+                    let klijent = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vreme] ? zauzetiBlokovi[datum][vreme] : null;
+                    
+                    if(klijent) {
                         tbody += '<td class="slot-booked">' +
                             '<div class="name">' + (klijent.ime || 'Zauzeto') + '</div>' +
                             '<div class="detail">' + (klijent.usluga || '') + ' (' + (klijent.cena || 0) + ' RSD)</div>' +
