@@ -217,7 +217,7 @@
     document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
     try {
-        let res = await fetch('/api/nedelja?offset=0');
+        let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
         let podaci = await res.json();
         
         let zauzetiBlokovi = {};
