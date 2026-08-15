@@ -69,6 +69,11 @@
                 let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
                 let podaci = await res.json();
                 
+                // --- DODATO DA VIDIMO ŠTA VRAĆA BAZA ---
+                console.log("TAČAN OPSEG KOJI TRAŽIMO:", prviDan, "do", poslednjiDan);
+                console.log("PODACI DOBIJENI IZ BAZE:", podaci);
+                // ---------------------------------------
+
                 let zauzetiBlokovi = {};
                 if (podaci) {
                     Object.keys(podaci).forEach(datum => {
