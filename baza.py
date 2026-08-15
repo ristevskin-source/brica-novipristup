@@ -121,7 +121,7 @@ def index():
 
 @app.route('/admin')
 def admin():
-    return render_template('admin.html')
+    return render_template('admin.html', v='1.1')
 
 # --- API RUTE ---
 @app.route('/api/slotovi/<datum>', methods=['GET'])
