@@ -225,7 +225,7 @@
             Object.keys(podaci).forEach(datum => {
                 Object.keys(podaci[datum]).forEach(vreme => {
                     let klijent = podaci[datum][vreme];
-                    if (klijent) { // <--- Uklonili smo uslov za status ovde
+                    if (klijent) {
                         let trajanje = klijent.trajanje || 30;
                         let [h, m] = vreme.split(':').map(Number);
                         let ukupnoSlotova = Math.ceil(trajanje / 30);
@@ -241,6 +241,7 @@
                         }
                     }
                 });
+            });
         }
 
         let sati = [
