@@ -96,9 +96,9 @@
             <input type="hidden" id="otkaziVreme">
 
             <div class="modal-actions">
-                <button onclick="naplatiTerminIzModala()" class="btn-confirm" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
-                <button onclick="potvrdiOtkazivanjeIzModala()" class="btn-cancel" style="background:#dc2626;">🗑️ Otkaži</button>
-                <button onclick="zatvoriDetaljeKlijenta()" class="btn-cancel" style="background:#52525b;">Zatvori</button>
+                <button onclick="naplatiTerminIzModala()" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
+                <button onclick="potvrdiOtkazivanjeIzModala()" style="background:#dc2626;">🗑️ Otkaži</button>
+                <button onclick="zatvoriDetaljeKlijenta()" style="background:#52525b;">Zatvori</button>
             </div>
         </div>
     </div>
@@ -176,7 +176,7 @@
                         for (let datum of dani) {
                             let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
                             if (rezervacija) {
-                                bodyHtml += `<td onclick="otvoriDetaljeKlijenta('${datum}', '${vremeSlot}', '${rezervacija.ime}', '${rezervacija.usluga}', '${rezervacija.cena || 0}')" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;">
+                                bodyHtml += `<td onclick="otvoriDetaljeKlijenta('${datum}', '${vremeSlot}', '${rezervacija.ime || ''}', '${rezervacija.usluga || ''}', '${rezervacija.cena || 0}')" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;">
                                     <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
                                     <small>${rezervacija.usluga || ''}</small>
                                 </td>`;
@@ -251,7 +251,7 @@
 
         async function dodajUslugu() {
             let naziv = document.getElementById('novaUslugaNaziv').value;
-            let cena = document.getElementById('novaUslugaCena').value;
+            let cena = document.getElementById('novaUslugaCena',).value;
             let trajanje = document.getElementById('novaUslugaTrajanje').value;
             if (!naziv || !cena) { alert("Unesi naziv i cenu!"); return; }
             await fetch('/api/usluge', {
@@ -276,8 +276,8 @@
             } catch(e) { console.error("Greška finansije:", e); }
         }
 
-        try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
-        try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
+        ucitajNedelju();
+        ucitajUslugeAdmin();
     </script>
 </body>
 </html>
