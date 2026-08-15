@@ -107,7 +107,8 @@
         function postaviUslugu(u) {
             izabranaUsluga = u;
             azurirajInfo();
-        }
+            ucitajSlotove(); // Automatski preračunava slobodne slotove za novu uslugu!
+        } 
     
         // Postavljanje lokalnog datuma (da ne preskoči dan zbog vremenske zone)
         const datumInput = document.getElementById('datumInput');
