@@ -88,7 +88,7 @@ def api_slotovi(datum):
     conn = get_connection()
     c = conn.cursor()
     
-    # Uzimamo zakazane termne i trajanje usluge za svaki termin
+    # Uzimamo zakazane termine i trajanje usluge u minutima
     c.execute("""
         SELECT r.vreme, COALESCE(u.trajanje, 30) as trajanje 
         FROM rezervacije r 
@@ -99,13 +99,13 @@ def api_slotovi(datum):
     rezervacije = c.fetchall()
     conn.close()
 
-    # Pravimo skup svih blokova koji su zauzeti (uključujući i blokove koje zahvata trajanje)
+    # Pravimo skup svih blokova koji moraju biti blokirani na osnovu trajanja
     zauzeti_slotovi = set()
     for r in rezervacije:
         pocetak = datetime.strptime(r['vreme'], "%H:%M")
         trajanje = int(r['trajanje'])
         
-        # Prolazimo kroz sve blokove od po 30 minuta unutar trajanja usluge
+        # Svi blokovi od po 30 min dok ne prođe celo trajanje usluge
         trenutni = pocetak
         kraj = pocetak + timedelta(minutes=trajanje)
         while trenutni < kraj:
