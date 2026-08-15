@@ -126,6 +126,10 @@ def admin():
 # --- API RUTE ---
 @app.route('/api/slotovi/<datum>', methods=['GET'])
 def api_slotovi(datum):
+    # Ako je nedelja (weekday() == 6), vrati praznu listu - nema slobodnih termina
+    dt = datetime.strptime(datum, "%Y-%m-%d")
+    if dt.weekday() == 6:
+        return jsonify([])
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
@@ -192,22 +196,36 @@ def api_zakazi():
     datum = data.get('datum')
     vreme = data.get('vreme')
     
-    @app.route('/api/zakazi', methods=['POST'])
-def api_zakazi():
-    data = request.get_json()
-    datum = data.get('datum')
-    vreme = data.get('vreme')
-    
-    # --- PROVERA: Sprečavanje zakazivanja u prošlosti ---
-    danas_str = datetime.now().strftime('%Y-%m-%d')
+    # 1. Provera: Blokada zakazivanja nedeljom (6 = nedelja)
+    dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
+    if dt_zakazi.weekday() == 6:
+        return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
+
+    # 2. Provera: Sprečavanje zakazivanja u prošlosti (SRB vreme UTC+2)
+    srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+    danas_str = srbija_vreme.strftime('%Y-%m-%d')
     if datum < danas_str:
         return jsonify({'status': 'error', 'poruka': 'Nije moguće zakazati u prošlosti!'}), 400
         
     if datum == danas_str:
-        trenutno_vreme = datetime.now().strftime('%H:%M')
+        trenutno_vreme = srbija_vreme.strftime('%H:%M')
         if vreme < trenutno_vreme:
             return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
-    # ----------------------------------------------------
+
+    ime = data.get('ime')
+    telefon = data.get('telefon')
+    usluga = data.get('usluga')
+    cena = data.get('cena')
+    
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
+    """, (datum, vreme, ime, telefon, usluga, cena))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
 
     ime = data.get('ime')
     telefon = data.get('telefon')
