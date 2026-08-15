@@ -129,7 +129,6 @@
                 const res = await fetch(`/api/slotovi/${izabraniDatum}`);
                 const data = await res.json();
                 
-                // Izvlačimo niz slotova, bilo da stigne direktno ili kao { slotovi: [...] }
                 const slotovi = Array.isArray(data) ? data : (data.slotovi || []);
                 const container = document.getElementById('mrezaSlotova');
                 
@@ -137,11 +136,30 @@
                     container.innerHTML = '<p class="col-span-4 text-xs text-gray-400 text-center">Nema dostupnih slotova za ovaj datum.</p>';
                     return;
                 }
-    
-                container.innerHTML = slotovi.map(s => {
+
+                // Izračunavamo koliko nam je slotova od po 30 min potrebno
+                const trajanje = (izabranaUsluga && izabranaUsluga.trajanje) ? izabranaUsluga.trajanje : 30;
+                const potrebnoSlotova = Math.ceil(trajanje / 30);
+
+                container.innerHTML = slotovi.map((s, index) => {
                     if (s.vreme >= "13:00" && s.vreme < "14:00") {
                         return `<div class="p-2 bg-zinc-950/60 border border-zinc-800/80 rounded text-[10px] text-red-500/50 text-center font-semibold">PAUZA</div>`;
-                    } else if (s.status === 'slobodan') {
+                    } 
+                    
+                    // Proveravamo da li ima dovoljno spojenih slobodnih slotova za trajanje usluge
+                    let imaMesta = true;
+                    if (s.status === 'zauzet') {
+                        imaMesta = false;
+                    } else {
+                        for (let i = 0; i < potrebnoSlotova; i++) {
+                            if (!slotovi[index + i] || slotovi[index + i].status === 'zauzet') {
+                                imaMesta = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (imaMesta) {
                         return `<button onclick="izaberiTermin('${s.vreme}')" class="p-2 bg-zinc-800 hover:bg-yellow-500 hover:text-black border border-zinc-700 rounded text-xs text-center font-semibold transition">${s.vreme}</button>`;
                     } else {
                         return `<div class="p-2 bg-zinc-950 border border-zinc-900 rounded text-xs text-zinc-600 text-center line-through">${s.vreme}</div>`;
