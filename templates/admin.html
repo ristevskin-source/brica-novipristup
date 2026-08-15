@@ -107,6 +107,23 @@
                 <div class="empty-message">⏳ Učitavanje usluga...</div>
             </div>
         </div>
+        <div class="services-box" style="margin-bottom: 24px;">
+            <h2>📊 Zarada i Statistika</h2>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px;">
+                <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <span style="font-size: 12px; color: #888;">Danas</span>
+                    <div id="zaradaDanas" style="font-size: 20px; font-weight: bold; color: #4ade80; margin-top: 4px;">0 RSD</div>
+                </div>
+                <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <span style="font-size: 12px; color: #888;">Ovaj mesec</span>
+                    <div id="zaradaMesec" style="font-size: 20px; font-weight: bold; color: #d4af37; margin-top: 4px;">0 RSD</div>
+                </div>
+                <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <span style="font-size: 12px; color: #888;">Ova godina</span>
+                    <div id="zaradaGodina" style="font-size: 20px; font-weight: bold; color: #60a5fa; margin-top: 4px;">0 RSD</div>
+                </div>
+            </div>
+        </div>
 
         <div class="nav-week">
             <button onclick="promeniNedelju(-1)">← Prethodna nedelja</button>
@@ -421,19 +438,37 @@
     async function naplatiTerminIzModala() {
         const datum = document.getElementById('otkaziDatum').value;
         const vreme = document.getElementById('otkaziVreme').value;
+        const ime = document.getElementById('detaljiIme').innerText;
+        const usluga = document.getElementById('detaljiUsluga').innerText;
+        const cenaText = document.getElementById('detaljiCena').innerText;
+        const cena = parseInt(cenaText) || 0;
         
-        await fetch('/api/otkazi', {
+        await fetch('/api/naplati', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ datum: datum, vreme: vreme })
+            body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, usluga: usluga, cena: cena })
         });
         
         zatvoriDetaljeKlijenta();
         ucitajNedelju();
+        ucitajStatistiku();
+    }
+
+    async function ucitajStatistiku() {
+        try {
+            const res = await fetch('/api/statistika');
+            const podaci = await res.json();
+            document.getElementById('zaradaDanas').innerText = `${podaci.danas} RSD`;
+            document.getElementById('zaradaMesec').innerText = `${podaci.mesec} RSD`;
+            document.getElementById('zaradaGodina').innerText = `${podaci.godina} RSD`;
+        } catch (e) {
+            console.error("Greška pri učitavanju statistike:", e);
+        }
     }
 
     try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
     try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
+    try { ucitajStatistiku(); } catch (e) { console.error("Greška statistika:", e); }
 </script>
 </body>
 </html>
