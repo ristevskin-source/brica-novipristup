@@ -199,7 +199,6 @@
     let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
     let headerRow = '<th>Vreme</th>';
     
-    // Prikazujemo 6 radnih dana počevši od današnjeg dana (preskačemo nedelju)
     let d = new Date(trenutniPocetniDan);
     while(dani.length < 6) {
         if (d.getDay() !== 0) {
@@ -244,45 +243,34 @@
             });
         }
 
-        let sati = [
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-            "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", 
-            "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", 
-            "18:00", "18:30", "19:00", "19:30"
-        ];
+        // Generisanje redova tabele po satima (od 08:00 do 20:00)
+        let bodyHtml = '';
+        let pocetniSat = 8;
+        let krajnjiSat = 20;
 
-        let tbody = '<tbody>';
-        sati.forEach(vreme => {
-            tbody += `<tr><td style="font-weight:bold; background:#f8f9fa;">${vreme}</td>`;
-            dani.forEach(dan => {
-                let klijent = (zauzetiBlokovi[dan] && zauzetiBlokovi[dan][vreme]) ? zauzetiBlokovi[dan][vreme] : null;
-                if (klijent) {
-                    tbody += `<td class="bg-info text-white text-center" style="cursor:pointer;" onclick="otvoriDetalje('${dan}', '${vreme}')">
-                                <b>${klijent.ime}</b><br><small>${klijent.usluga}</small>
-                              </td>`;
-                } else {
-                    tbody += `<td></td>`;
+        for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
+            for (let min of [0, 30]) {
+                let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
+
+                for (let datum of dani) {
+                    let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
+                    if (rezervacija) {
+                        bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
+                            <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
+                            <small>${rezervacija.usluga || ''}</small>
+                        </td>`;
+                    } else {
+                        bodyHtml += `<td style="color:#ccc;">-</td>`;
+                    }
                 }
-            });
-            tbody += `</tr>`;
-        });
-        tbody += `</tbody>`;
-        document.getElementById('teloTabele').innerHTML = tbody;
-
-    } catch (error) {
-        console.error("Greška pri učitavanju nedelje:", error);
-    }
-}
-
-    async function oslobodiTermin(datum, vreme) {
-        if(confirm('Da li otkazujete termin ' + datum + ' u ' + vreme + '?')) {
-            await fetch('/api/otkazi', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({datum: datum, vreme: vreme})
-            });
-            ucitajNedelju();
+                bodyHtml += `</tr>`;
+            }
         }
+        document.getElementById('teloTabele').innerHTML = bodyHtml;
+
+    } catch (err) {
+        console.error("Greška pri učitavanju nedelje:", err);
     }
 
     async function otvoriZakazivanje(datum, vreme) {
