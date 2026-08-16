@@ -1,9 +1,11 @@
+import os
 import sqlite3 
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-DB_NAME = 'brica.db'
+# Allow overriding DB name/path via environment variable for deployment flexibility
+DB_NAME = os.environ.get('DB_NAME', 'brica.db')
 
 def get_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -152,11 +154,7 @@ def api_slotovi(datum):
 
     while start < end:
         vreme_str = start.strftime("%H:%M")
-        # Pauza 13:00 - 14:00
-        if "13:00" <= vreme_str < "14:00":
-            status = 'pauza'
-        else:
-            status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
+        status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
         svi_slotovi.append({'vreme': vreme_str, 'status': status})
         start += timedelta(minutes=30)
 
