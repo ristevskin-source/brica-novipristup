@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import math
 
-DB_PATH = 'termini.db'
+DB_PATH = 'brica.db'  # use the same DB that baza.py initializes
 
 app = Flask(__name__)
 CORS(app)
@@ -26,7 +26,8 @@ def get_db_conn():
 def api_usluge():
     conn = get_db_conn()
     c = conn.cursor()
-    c.execute("SELECT rowid as id, usluga as ime, cena, trajanje FROM cenovnik ORDER BY trajanje ASC")
+    # use the "usluge" table present in baza.py
+    c.execute("SELECT id, ime, cena, trajanje FROM usluge ORDER BY trajanje ASC")
     rows = c.fetchall()
     conn.close()
     usluge = [dict(r) for r in rows]
@@ -117,19 +118,15 @@ def api_zakazi():
     conn = get_db_conn()
     c = conn.cursor()
 
-    # find service in cenovnik
-    if usluga_input is None and cena_input is None:
-        conn.close()
-        return jsonify({'status': 'error', 'poruka': 'Nedostaje usluga'}), 400
-
-    # try to find by exact name
-    c.execute("SELECT usluga, cena, trajanje FROM cenovnik WHERE usluga = ?", (usluga_input,))
-    svc = c.fetchone()
-    if not svc:
-        # try by id if provided
+    # find service in usluge table
+    svc = None
+    if usluga_input:
+        c.execute("SELECT ime, cena, trajanje FROM usluge WHERE ime = ?", (usluga_input,))
+        svc = c.fetchone()
+    if not svc and data.get('usluga_id'):
         try:
             svc_id = int(data.get('usluga_id'))
-            c.execute("SELECT usluga, cena, trajanje FROM cenovnik WHERE rowid = ?", (svc_id,))
+            c.execute("SELECT ime, cena, trajanje FROM usluge WHERE id = ?", (svc_id,))
             svc = c.fetchone()
         except Exception:
             svc = None
@@ -140,7 +137,7 @@ def api_zakazi():
         cena = int(cena_input) if cena_input else 0
         usluga_ime = usluga_input or 'Usluga'
     else:
-        usluga_ime = svc['usluga']
+        usluga_ime = svc['ime']
         cena = svc['cena']
         trajanje = svc['trajanje']
 
