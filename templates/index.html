@@ -2,167 +2,111 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel — Kod Kubanca</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Admin Panel - Rezervacije i Usluge</title>
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .gold-border { border-color: #d4af37; }
-        .gold-bg { background-color: #d4af37; }
-        .gold-text { color: #d4af37; }
-        .gold-ring:focus { ring-color: #d4af37; }
-        .glass { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); }
-        .cell-zauzet { background: linear-gradient(135deg, #0e495a 0%, #164e63 100%); border: 1px solid #22d3ee40; }
-        .cell-zauzet:hover { background: linear-gradient(135deg, #155e75 0%, #0e7490 100%); }
-        .cell-slobodan { color: #52525b; }
-        .cell-pauza { background: #18181b; color: #52525b; font-size: 10px; }
-        .cell-danas { border-top: 2px solid #d4af37; }
-        th { background: #1e1e1e; color: #d4af37; font-weight: 600; font-size: 13px; padding: 10px 6px; border: 1px solid #27272a; }
-        td { border: 1px solid #27272a; padding: 8px 4px; text-align: center; font-size: 12px; vertical-align: middle; cursor: default; }
-        tr:hover td:first-child { background: #3f3f46; }
-        .modal-overlay { background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); }
-        .usluga-card { background: #1e1e1e; border: 1px solid #27272a; border-radius: 8px; padding: 12px; }
-        .usluga-card:hover { border-color: #d4af3750; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .slot-time { font-weight: 600; color: #a1a1aa; font-size: 11px; }
-        .today-badge { background: #d4af37; color: #000; font-size: 9px; font-weight: bold; padding: 1px 6px; border-radius: 10px; display: inline-block; margin-left: 4px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #121212; color: #e0e0e0; }
+        h1, h2, h3 { color: #ffffff; }
+        .nav-container { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        button { padding: 8px 16px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 4px; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        #rasponNedelje { font-size: 16px; color: #a1a1aa; font-weight: bold; }
+
+        .section { background: #1e1e1e; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #27272a; clear: both; }
+
+        .table-responsive { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; background: #18181b; min-width: 800px; }
+        th, td { border: 1px solid #27272a; padding: 12px 10px; text-align: center; vertical-align: middle; }
+        th { background: #2563eb; color: white; font-weight: 600; font-size: 14px; }
+        td { font-size: 13px; color: #f4f4f5; }
+        tr td:first-child { background: #27272a; font-weight: bold; color: #f4f4f5; width: 80px; }
+
+        .form-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+        input, select { padding: 8px; border: 1px solid #3f3f46; border-radius: 4px; background: #27272a; color: white; }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        #finansijeInfo { font-size: 18px; font-weight: bold; color: #4ade80; margin-top: 10px; }
+
+        .usluga-item { display: flex; justify-content: space-between; align-items: center; background: #27272a; padding: 12px 15px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #3f3f46; flex-wrap: wrap; gap: 10px; }
+        .usluga-inputs { display: flex; gap: 10px; align-items: center; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #3f3f46; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+
+        .today-header { background: #d4af37 !important; color: #000 !important; }
+        .today-cell { border-top: 2px solid #d4af37; }
+        .pauza-cell { background: #18181b; color: #52525b; font-size: 10px; }
     </style>
 <base target="_blank">
 </head>
-<body class="p-4 max-w-6xl mx-auto space-y-6 pb-20">
+<body>
 
-    <!-- Header -->
-    <header class="flex items-center justify-between py-2 border-b border-zinc-800">
-        <div>
-            <h1 class="text-2xl font-bold gold-text tracking-wide">🔐 Admin Panel</h1>
-            <p class="text-xs text-gray-500 mt-1">Upravljanje terminima, uslugama i finansijama</p>
-        </div>
-        <a href="/" class="text-xs text-gray-500 hover:text-yellow-500 transition">← Nazad na sajt</a>
-    </header>
+    <h1>Admin Panel - Upravljanje</h1>
 
-    <!-- Današnji termini (Quick View) -->
-    <div class="bg-zinc-900 rounded-xl border gold-border p-4 shadow-lg">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-bold gold-text">📅 Današnji termini</h2>
-            <span id="danasDatum" class="text-xs text-gray-400 bg-zinc-800 px-3 py-1 rounded-full"></span>
-        </div>
-        <div id="danasTermini" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <p class="text-xs text-gray-500 col-span-full">Učitavanje...</p>
-        </div>
-    </div>
-
-    <!-- Nedeljni kalendar -->
-    <div class="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-lg">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 class="text-lg font-bold gold-text">📆 Nedeljni pregled</h2>
-            <div class="flex items-center gap-2">
-                <button onclick="promeniNedelju(-1)" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-xs font-semibold transition">← Prethodna</button>
-                <span id="rasponNedelje" class="text-xs text-gray-400 font-mono bg-zinc-800 px-3 py-1.5 rounded border border-zinc-700"></span>
-                <button onclick="promeniNedelju(1)" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-xs font-semibold transition">Sledeća →</button>
-                <button onclick=" idiNaTrenutnuNedelju()" class="px-3 py-1.5 gold-bg text-black font-bold rounded text-xs hover:bg-yellow-500 transition">Danas</button>
-            </div>
+    <!-- SEKCIJA: Kalendar i Nedelja -->
+    <div class="section">
+        <h2>Pregled termina po nedeljama</h2>
+        <div class="nav-container">
+            <button onclick="promeniNedelju(-1)">Prethodna</button>
+            <span id="rasponNedelje"></span>
+            <button onclick="promeniNedelju(1)">Sledeća</button>
+            <button onclick="idiNaTrenutnuNedelju()" style="background:#16a34a;">Danas</button>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse min-w-[700px]">
+        <div class="table-responsive">
+            <table>
                 <thead>
                     <tr id="zaglavljeTabele"></tr>
                 </thead>
-                <tbody id="teloTabele"></tbody>
+                <tbody id="teloTabele">
+                </tbody>
             </table>
         </div>
+    </div>
 
-        <div class="flex gap-4 mt-3 text-[10px] text-gray-500">
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded cell-zauzet inline-block"></span> Zauzet termin</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-zinc-950 border border-zinc-800 inline-block"></span> Slobodno</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded cell-pauza inline-block"></span> Pauza (13-14h)</span>
+    <!-- SEKCIJA: Finansije -->
+    <div class="section">
+        <h2>Finansije i Promet</h2>
+        <div class="form-group">
+            <label>Od:</label> <input type="date" id="finansijeOd">
+            <label>Do:</label> <input type="date" id="finansijeDo">
+            <button onclick="izracunajFinansije()">Izračunaj zaradu</button>
+        </div>
+        <div id="finansijeInfo">Ukupan promet: 0 RSD</div>
+    </div>
+
+    <!-- SEKCIJA: Upravljanje uslugama i cenama -->
+    <div class="section">
+        <h2>Usluge, Cene i Trajanje</h2>
+
+        <h3>Dodaj novu uslugu</h3>
+        <div class="form-group">
+            <input type="text" id="novaUslugaNaziv" placeholder="Naziv usluge">
+            <input type="text" id="novaUslugaCena" placeholder="Cena (RSD)">
+            <input type="text" id="novaUslugaTrajanje" placeholder="Trajanje (min)">
+            <button onclick="dodajUslugu()" style="background: #16a34a;">Dodaj uslugu</button>
+        </div>
+
+        <h3 style="margin-top: 20px;">Postojeće usluge (Direktna izmena)</h3>
+        <div id="listaUslugaAdmin">
+            <p style="color: #a1a1aa;">Učitavanje usluga...</p>
         </div>
     </div>
 
-    <!-- Finansije -->
-    <div class="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-lg">
-        <h2 class="text-lg font-bold gold-text mb-3">💰 Finansije i Promet</h2>
-
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-3 gap-3 mb-4">
-            <div class="bg-zinc-800 rounded-lg p-3 text-center border border-zinc-700">
-                <p class="text-[10px] text-gray-500 uppercase tracking-wider">Danas</p>
-                <p id="statDanas" class="text-lg font-bold text-green-400">0 RSD</p>
-            </div>
-            <div class="bg-zinc-800 rounded-lg p-3 text-center border border-zinc-700">
-                <p class="text-[10px] text-gray-500 uppercase tracking-wider">Ovaj mesec</p>
-                <p id="statMesec" class="text-lg font-bold text-green-400">0 RSD</p>
-            </div>
-            <div class="bg-zinc-800 rounded-lg p-3 text-center border border-zinc-700">
-                <p class="text-[10px] text-gray-500 uppercase tracking-wider">Ova godina</p>
-                <p id="statGodina" class="text-lg font-bold text-green-400">0 RSD</p>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap items-end gap-3">
-            <div>
-                <label class="block text-[10px] text-gray-500 mb-1 uppercase">Od datuma</label>
-                <input type="date" id="finansijeOd" class="bg-zinc-800 text-white text-sm px-3 py-2 rounded border border-zinc-700 outline-none focus:border-yellow-500">
-            </div>
-            <div>
-                <label class="block text-[10px] text-gray-500 mb-1 uppercase">Do datuma</label>
-                <input type="date" id="finansijeDo" class="bg-zinc-800 text-white text-sm px-3 py-2 rounded border border-zinc-700 outline-none focus:border-yellow-500">
-            </div>
-            <button onclick="izracunajFinansije()" class="px-4 py-2 gold-bg text-black font-bold rounded text-sm hover:bg-yellow-500 transition">Izračunaj</button>
-        </div>
-        <p id="finansijeInfo" class="mt-3 text-sm font-bold text-green-400"></p>
-    </div>
-
-    <!-- Upravljanje uslugama -->
-    <div class="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-lg">
-        <h2 class="text-lg font-bold gold-text mb-3">✂️ Usluge, Cene i Trajanje</h2>
-
-        <!-- Dodaj novu -->
-        <div class="bg-zinc-800/50 rounded-lg p-3 mb-4 border border-zinc-700/50">
-            <p class="text-xs text-gray-400 mb-2 font-semibold">Dodaj novu uslugu</p>
-            <div class="flex flex-wrap gap-2 items-end">
-                <input type="text" id="novaUslugaNaziv" placeholder="Naziv usluge" class="bg-zinc-900 text-white text-sm px-3 py-2 rounded border border-zinc-700 outline-none focus:border-yellow-500 w-40">
-                <input type="number" id="novaUslugaCena" placeholder="Cena" class="bg-zinc-900 text-white text-sm px-3 py-2 rounded border border-zinc-700 outline-none focus:border-yellow-500 w-28">
-                <input type="number" id="novaUslugaTrajanje" placeholder="Min" value="30" class="bg-zinc-900 text-white text-sm px-3 py-2 rounded border border-zinc-700 outline-none focus:border-yellow-500 w-24">
-                <button onclick="dodajUslugu()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-sm transition">+ Dodaj</button>
-            </div>
-        </div>
-
-        <div id="listaUslugaAdmin" class="space-y-2">
-            <p class="text-xs text-gray-500">Učitavanje usluga...</p>
-        </div>
-    </div>
-
-    <!-- Modal za detalje rezervacije -->
-    <div id="detaljiKlijentaModal" class="fixed inset-0 z-50 hidden modal-overlay items-center justify-center p-4">
-        <div class="glass rounded-xl border border-zinc-700 w-full max-w-sm p-5 shadow-2xl transform transition-all">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold gold-text">📋 Detalji rezervacije</h3>
-                <button onclick="zatvoriDetaljeKlijenta()" class="text-gray-500 hover:text-white text-xl">&times;</button>
-            </div>
-
-            <div class="space-y-3 text-sm">
-                <div class="flex justify-between border-b border-zinc-800 pb-2">
-                    <span class="text-gray-500">Datum i vreme</span>
-                    <span id="detaljiVreme" class="font-semibold text-white"></span>
-                </div>
-                <div class="flex justify-between border-b border-zinc-800 pb-2">
-                    <span class="text-gray-500">Klijent</span>
-                    <span id="detaljiIme" class="font-semibold text-white"></span>
-                </div>
-                <div class="flex justify-between border-b border-zinc-800 pb-2">
-                    <span class="text-gray-500">Telefon</span>
-                    <span id="detaljiTelefon" class="font-semibold text-cyan-400"></span>
-                </div>
-                <div class="flex justify-between border-b border-zinc-800 pb-2">
-                    <span class="text-gray-500">Usluga</span>
-                    <span id="detaljiUsluga" class="font-semibold text-white"></span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Cena</span>
-                    <span id="detaljiCena" class="font-bold text-green-400 text-lg"></span>
-                </div>
-            </div>
+    <!-- Modal za detalje klijenta -->
+    <div id="detaljiKlijentaModal" class="modal">
+        <div class="modal-content">
+            <h3>📋 Detalji rezervacije</h3>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Datum i vreme: <strong id="detaljiVreme" style="color:#d4af37;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Klijent: <strong id="detaljiIme" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Telefon: <strong id="detaljiTelefon" style="color:#22d3ee;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Usluga: <strong id="detaljiUsluga" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 16px; color: #a1a1aa; font-size: 13px;">Cena: <strong id="detaljiCena" style="color:#4ade80;"></strong> RSD</p>
 
             <input type="hidden" id="otkaziDatum">
             <input type="hidden" id="otkaziVreme">
@@ -170,36 +114,33 @@
             <input type="hidden" id="otkaziUsluga">
             <input type="hidden" id="otkaziCena">
 
-            <div class="grid grid-cols-2 gap-3 mt-5">
-                <button onclick="naplatiTerminIzModala()" class="py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-1">
-                    💵 Naplaćeno
-                </button>
-                <button onclick="potvrdiOtkazivanjeIzModala()" class="py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-1">
-                    🗑️ Otkaži
-                </button>
+            <div class="modal-actions">
+                <button onclick="naplatiTerminIzModala()" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
+                <button onclick="potvrdiOtkazivanjeIzModala()" style="background:#dc2626;">🗑️ Otkaži</button>
+                <button onclick="zatvoriDetaljeKlijenta()" style="background:#52525b;">Zatvori</button>
             </div>
-            <button onclick="zatvoriDetaljeKlijenta()" class="w-full mt-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-xs transition">Zatvori</button>
         </div>
     </div>
 
     <script>
         let trenutniOffset = 0;
         const imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-        const imenaDanaFull = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
 
+        // === ISPRAVKA 1: Lokalni datum (NE toISOString!) ===
         function formatirajDatum(d) {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return year + '-' + month + '-' + day;
         }
 
-        function getPonedeljak(offset = 0) {
+        // === ISPRAVKA 2: Uvek kreći od ponedeljka ===
+        function getPonedeljak(offset) {
             const d = new Date();
-            const day = d.getDay();
+            const day = d.getDay(); // 0=ned, 1=pon...
             const diff = d.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
             const ponedeljak = new Date(d.setDate(diff));
-            return new Date(ponedeljak.setHours(0,0,0,0));
+            return new Date(ponedeljak.setHours(0, 0, 0, 0));
         }
 
         function promeniNedelju(smer) {
@@ -215,7 +156,7 @@
         async function ucitajNedelju() {
             const ponedeljak = getPonedeljak(trenutniOffset);
             const dani = [];
-            let headerRow = '<th class="slot-time">Vreme</th>';
+            let headerRow = '<th>Vreme</th>';
             const danasStr = formatirajDatum(new Date());
 
             for (let i = 0; i < 6; i++) {
@@ -224,35 +165,39 @@
                 const dStr = formatirajDatum(d);
                 dani.push(dStr);
                 const imeDana = imenaDana[d.getDay()];
-                const isToday = dStr === danasStr;
-                headerRow += `<th class="${isToday ? 'cell-danas' : ''}">${imeDana}<br><span class="text-[10px] text-gray-500">${dStr.split('-').slice(1).join('.')}</span>${isToday ? '<br><span class="today-badge">DANAS</span>' : ''}</th>`;
+                const isToday = (dStr === danasStr) ? 'today-header' : '';
+                headerRow += '<th class="' + isToday + '">' + imeDana + '<br><span style="font-size:10px;color:#a1a1aa;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
             }
             document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
             const prviDan = dani[0];
             const poslednjiDan = dani[dani.length - 1];
-            document.getElementById('rasponNedelje').innerText = `${prviDan} → ${poslednjiDan}`;
+            document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
             try {
-                const res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
-                const podaci = await res.json();
+                let res = await fetch('/api/nedelja?pocetak=' + prviDan + '&kraj=' + poslednjiDan);
+                let podaci = await res.json();
 
-                // Izračunaj zauzete blokove
-                const zauzetiBlokovi = {};
+                let zauzetiBlokovi = {};
                 if (podaci) {
-                    Object.keys(podaci).forEach(datum => {
-                        Object.keys(podaci[datum]).forEach(vreme => {
-                            const klijent = podaci[datum][vreme];
+                    Object.keys(podaci).forEach(function(datum) {
+                        Object.keys(podaci[datum]).forEach(function(vreme) {
+                            let klijent = podaci[datum][vreme];
                             if (klijent) {
-                                const trajanje = klijent.trajanje || 30;
-                                let [h, m] = vreme.split(':').map(Number);
-                                const ukupnoSlotova = Math.ceil(trajanje / 30);
+                                let trajanje = klijent.trajanje || 30;
+                                let parts = vreme.split(':');
+                                let h = parseInt(parts[0]);
+                                let m = parseInt(parts[1]);
+                                let ukupnoSlotova = Math.ceil(trajanje / 30);
                                 for (let i = 0; i < ukupnoSlotova; i++) {
-                                    const slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                    let slotVreme = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
                                     if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
                                     zauzetiBlokovi[datum][slotVreme] = klijent;
                                     m += 30;
-                                    if (m >= 60) { h += 1; m -= 60; }
+                                    if (m >= 60) {
+                                        h += 1;
+                                        m -= 60;
+                                    }
                                 }
                             }
                         });
@@ -260,79 +205,52 @@
                 }
 
                 let bodyHtml = '';
-                for (let sat = 9; sat < 20; sat++) {
-                    for (let min of [0, 30]) {
-                        const vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                        const isPauza = vremeSlot >= "13:00" && vremeSlot < "14:00";
+                let pocetniSat = 9;
+                let krajnjiSat = 20;
 
-                        bodyHtml += `<tr><td class="slot-time bg-zinc-800/50">${vremeSlot}</td>`;
+                for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
+                    for (let min of [0, 30]) {
+                        let vremeSlot = String(sat).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+                        let isPauza = (vremeSlot >= "13:00" && vremeSlot < "14:00");
+                        bodyHtml += '<tr><td style="font-weight:bold; background:#27272a;">' + vremeSlot + '</td>';
 
                         for (let datum of dani) {
-                            const isTodayCol = datum === danasStr;
-                            const rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
+                            let isTodayCol = (datum === danasStr) ? 'today-cell' : '';
+                            let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
 
                             if (isPauza) {
-                                bodyHtml += `<td class="cell-pauza ${isTodayCol ? 'cell-danas' : ''}">PAUZA</td>`;
+                                bodyHtml += '<td class="pauza-cell ' + isTodayCol + '">PAUZA</td>';
                             } else if (rezervacija) {
-                                bodyHtml += `<td onclick="otvoriDetaljeKlijenta('${datum}', '${vremeSlot}', '${(rezervacija.ime || '').replace(/'/g, "\'")}', '${(rezervacija.usluga || '').replace(/'/g, "\'")}', '${rezervacija.cena || 0}', '${(rezervacija.telefon || '').replace(/'/g, "\'")}')" class="cell-zauzet ${isTodayCol ? 'cell-danas' : ''} cursor-pointer">
-                                    <div class="font-semibold text-white text-[11px]">${rezervacija.ime || 'Rezervisano'}</div>
-                                    <div class="text-[10px] text-cyan-300">${rezervacija.usluga || ''}</div>
-                                </td>`;
+                                let safeIme = (rezervacija.ime || '').replace(/'/g, "\'");
+                                let safeUsluga = (rezervacija.usluga || '').replace(/'/g, "\'");
+                                let safeTelefon = (rezervacija.telefon || '').replace(/'/g, "\'");
+                                bodyHtml += '<td onclick="otvoriDetaljeKlijenta(' + 
+                                    "'" + datum + "', '" + vremeSlot + "', '" + safeIme + "', '" + safeUsluga + "', '" + (rezervacija.cena || 0) + "', '" + safeTelefon + "')" + 
+                                    '" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;" class="' + isTodayCol + '">' +
+                                    '<strong>' + (rezervacija.ime || 'Rezervisano') + '</strong><br>' +
+                                    '<small>' + (rezervacija.usluga || '') + '</small>' +
+                                    '</td>';
                             } else {
-                                bodyHtml += `<td class="cell-slobodan ${isTodayCol ? 'cell-danas' : ''}">—</td>`;
+                                bodyHtml += '<td style="color:#52525b;" class="' + isTodayCol + '">-</td>';
                             }
                         }
-                        bodyHtml += `</tr>`;
+                        bodyHtml += '</tr>';
                     }
                 }
                 document.getElementById('teloTabele').innerHTML = bodyHtml;
 
             } catch (err) {
                 console.error("Greška pri učitavanju nedelje:", err);
-                document.getElementById('teloTabele').innerHTML = '<tr><td colspan="7" class="text-red-400 py-4">Greška pri učitavanju podataka.</td></tr>';
+                document.getElementById('teloTabele').innerHTML = '<tr><td colspan="7" style="color:#f87171; padding:20px;">Greška pri učitavanju podataka. Proveri da li je backend pokrenut.</td></tr>';
             }
         }
 
-        // Današnji termini
-        async function ucitajDanasnjeTermine() {
-            const danas = formatirajDatum(new Date());
-            document.getElementById('danasDatum').innerText = danas;
-
-            try {
-                const res = await fetch(`/api/nedelja?pocetak=${danas}&kraj=${danas}`);
-                const podaci = await res.json();
-                const container = document.getElementById('danasTermini');
-
-                if (!podaci[danas] || Object.keys(podaci[danas]).length === 0) {
-                    container.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Nema zakazanih termina za danas.</p>';
-                    return;
-                }
-
-                const termini = Object.entries(podaci[danas]).sort((a,b) => a[0].localeCompare(b[0]));
-                container.innerHTML = termini.map(([vreme, t]) => `
-                    <div onclick="otvoriDetaljeKlijenta('${danas}', '${vreme}', '${(t.ime||'').replace(/'/g, "\'")}', '${(t.usluga||'').replace(/'/g, "\'")}', '${t.cena||0}', '${(t.telefon||'').replace(/'/g, "\'")}')" 
-                         class="bg-zinc-800 rounded-lg p-3 border border-zinc-700 cursor-pointer hover:border-yellow-500 transition group">
-                        <div class="flex justify-between items-start">
-                            <span class="text-lg font-bold gold-text">${vreme}</span>
-                            <span class="text-xs text-green-400 font-bold">${t.cena} RSD</span>
-                        </div>
-                        <p class="text-sm text-white font-semibold mt-1">${t.ime}</p>
-                        <p class="text-xs text-gray-500">${t.usluga}</p>
-                        <p class="text-xs text-cyan-500 mt-1">📞 ${t.telefon || 'Nema telefona'}</p>
-                    </div>
-                `).join('');
-            } catch(e) {
-                document.getElementById('danasTermini').innerHTML = '<p class="text-xs text-red-400 col-span-full">Greška pri učitavanju.</p>';
-            }
-        }
-
-        // Modal
         function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena, telefon) {
-            document.getElementById('detaljiVreme').innerText = `${datum} u ${vreme}h`;
+            document.getElementById('detaljiVreme').innerText = datum + ' u ' + vreme;
             document.getElementById('detaljiIme').innerText = ime || 'Nepoznato';
             document.getElementById('detaljiTelefon').innerText = telefon || 'Nema';
             document.getElementById('detaljiUsluga').innerText = usluga || '-';
-            document.getElementById('detaljiCena').innerText = `${cena} RSD`;
+            document.getElementById('detaljiCena').innerText = cena;
             document.getElementById('otkaziDatum').value = datum;
             document.getElementById('otkaziVreme').value = vreme;
             document.getElementById('otkaziIme').value = ime;
@@ -345,6 +263,7 @@
             document.getElementById('detaljiKlijentaModal').style.display = 'none';
         }
 
+        // === ISPRAVKA 3: Naplata šalje na /api/naplati (ne na /api/otkazi!) ===
         async function naplatiTerminIzModala() {
             const datum = document.getElementById('otkaziDatum').value;
             const vreme = document.getElementById('otkaziVreme').value;
@@ -355,12 +274,10 @@
             await fetch('/api/naplati', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ datum, vreme, ime, usluga, cena })
+                body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, usluga: usluga, cena: cena })
             });
             zatvoriDetaljeKlijenta();
             ucitajNedelju();
-            ucitajDanasnjeTermine();
-            ucitajStatistiku();
         }
 
         async function potvrdiOtkazivanjeIzModala() {
@@ -370,134 +287,116 @@
             await fetch('/api/otkazi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ datum, vreme })
+                body: JSON.stringify({ datum: datum, vreme: vreme })
             });
             zatvoriDetaljeKlijenta();
             ucitajNedelju();
-            ucitajDanasnjeTermine();
         }
 
-        // Usluge
+        // === ISPRAVKA 4: Usluge koriste ID, šalju 'ime' (ne 'naziv'), PUT/DELETE ===
         async function ucitajUslugeAdmin() {
             try {
-                const res = await fetch('/api/usluge');
-                const usluge = await res.json();
-                const kontejner = document.getElementById('listaUslugaAdmin');
+                let res = await fetch('/api/usluge');
+                let usluge = await res.json();
+                let kontejner = document.getElementById('listaUslugaAdmin');
 
                 if (!usluge || usluge.length === 0) {
-                    kontejner.innerHTML = '<p class="text-xs text-gray-500">Nema unetih usluga.</p>';
+                    kontejner.innerHTML = '<p style="color: #a1a1aa;">Nema unetih usluga.</p>';
                     return;
                 }
 
-                kontejner.innerHTML = usluge.map((u) => `
-                    <div class="usluga-card flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex-1 min-w-[200px]">
-                            <input type="text" id="usl_ime_${u.id}" value="${u.ime}" class="bg-zinc-900 text-white text-sm px-2 py-1 rounded border border-zinc-700 w-full mb-1 outline-none focus:border-yellow-500" placeholder="Naziv">
-                            <div class="flex gap-2">
-                                <input type="number" id="usl_cena_${u.id}" value="${u.cena}" class="bg-zinc-900 text-white text-sm px-2 py-1 rounded border border-zinc-700 w-24 outline-none focus:border-yellow-500" placeholder="Cena">
-                                <input type="number" id="usl_traj_${u.id}" value="${u.trajanje || 30}" class="bg-zinc-900 text-white text-sm px-2 py-1 rounded border border-zinc-700 w-20 outline-none focus:border-yellow-500" placeholder="Min">
-                                <span class="text-xs text-gray-500 self-center">min</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="sacuvajUslugu(${u.id})" class="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold rounded transition">Sačuvaj</button>
-                            <button onclick="obrisiUslugu(${u.id})" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded transition">Obriši</button>
-                        </div>
-                    </div>
-                `).join('');
+                let html = '';
+                usluge.forEach(function(u) {
+                    html += '<div class="usluga-item">' +
+                        '<div><strong style="color: #fff; font-size: 15px;">' + u.ime + '</strong></div>' +
+                        '<div class="usluga-inputs">' +
+                            '<input type="text" id="ime_' + u.id + '" value="' + u.ime + '" style="width: 140px;" placeholder="Naziv">' +
+                            '<input type="text" id="cena_' + u.id + '" value="' + u.cena + '" style="width: 90px;" placeholder="Cena"> RSD ' +
+                            '<input type="text" id="trajanje_' + u.id + '" value="' + (u.trajanje || 30) + '" style="width: 70px;" placeholder="Min"> min ' +
+                            '<button onclick="sacuvajUslugu(' + u.id + ')" style="background: #ca8a04; padding: 6px 12px; font-size: 12px;">Sačuvaj</button>' +
+                            '<button onclick="obrisiUslugu(' + u.id + ')" style="background: #dc2626; padding: 6px 12px; font-size: 12px;">Obriši</button>' +
+                        '</div></div>';
+                });
+                kontejner.innerHTML = html;
             } catch (e) {
-                document.getElementById('listaUslugaAdmin').innerHTML = '<p class="text-xs text-red-400">Greška pri učitavanju usluga.</p>';
+                console.error("Greška pri učitavanju usluga:", e);
+                document.getElementById('listaUslugaAdmin').innerHTML = '<p style="color: #f87171;">Greška pri učitavanju usluga sa servera.</p>';
             }
         }
 
+        // === ISPRAVKA 5: Dodavanje šalje 'ime' (ne 'naziv') ===
         async function dodajUslugu() {
-            const ime = document.getElementById('novaUslugaNaziv').value.trim();
-            const cena = document.getElementById('novaUslugaCena').value.trim();
-            const trajanje = document.getElementById('novaUslugaTrajanje').value.trim();
+            let ime = document.getElementById('novaUslugaNaziv').value.trim();
+            let cena = document.getElementById('novaUslugaCena').value.trim();
+            let trajanje = document.getElementById('novaUslugaTrajanje').value.trim();
 
-            if (!ime || !cena) { alert("Unesi naziv i cenu usluge!"); return; }
+            if (!ime || !cena) { 
+                alert("Unesi naziv i cenu usluge!"); 
+                return; 
+            }
 
             await fetch('/api/usluge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
+                body: JSON.stringify({ ime: ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
 
             document.getElementById('novaUslugaNaziv').value = '';
             document.getElementById('novaUslugaCena').value = '';
-            document.getElementById('novaUslugaTrajanje').value = '30';
+            document.getElementById('novaUslugaTrajanje').value = '';
             ucitajUslugeAdmin();
         }
 
+        // === ISPRAVKA 6: Izmena koristi PUT na /api/usluge/<id> ===
         async function sacuvajUslugu(id) {
-            const ime = document.getElementById(`usl_ime_${id}`).value.trim();
-            const cena = document.getElementById(`usl_cena_${id}`).value.trim();
-            const trajanje = document.getElementById(`usl_traj_${id}`).value.trim();
+            let ime = document.getElementById('ime_' + id).value.trim();
+            let cena = document.getElementById('cena_' + id).value.trim();
+            let trajanje = document.getElementById('trajanje_' + id).value.trim();
 
-            if (!ime || !cena) { alert("Naziv i cena ne mogu biti prazni!"); return; }
+            if (!ime || !cena) {
+                alert("Naziv i cena ne mogu biti prazni!");
+                return;
+            }
 
-            await fetch(`/api/usluge/${id}`, {
+            await fetch('/api/usluge/' + id, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
+                body: JSON.stringify({ ime: ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
-
-            // Visual feedback
-            const btn = event.target;
-            const oldText = btn.innerText;
-            btn.innerText = '✓';
-            btn.classList.add('bg-green-600');
-            setTimeout(() => { btn.innerText = oldText; btn.classList.remove('bg-green-600'); }, 800);
-        }
-
-        async function obrisiUslugu(id) {
-            if (!confirm('Da li si siguran da želiš da obrišeš ovu uslugu?')) return;
-            await fetch(`/api/usluge/${id}`, { method: 'DELETE' });
+            alert('Usluga "' + ime + '" je uspešno sačuvana!');
             ucitajUslugeAdmin();
         }
 
-        // Finansije
+        // === ISPRAVKA 7: Brisanje koristi DELETE na /api/usluge/<id> ===
+        async function obrisiUslugu(id) {
+            if (!confirm('Da li si siguran da želiš da obrišeš ovu uslugu?')) return;
+
+            await fetch('/api/usluge/' + id, {
+                method: 'DELETE'
+            });
+            ucitajUslugeAdmin();
+        }
+
+        // === ISPRAVKA 8: Finansije ruta postoji na backendu ===
         async function izracunajFinansije() {
-            const odDatuma = document.getElementById('finansijeOd').value;
-            const doDatuma = document.getElementById('finansijeDo').value;
-            if (!odDatuma || !doDatuma) { alert("Izaberi oba datuma!"); return; }
+            let odDatuma = document.getElementById('finansijeOd').value;
+            let doDatuma = document.getElementById('finansijeDo').value;
+            if(!odDatuma || !doDatuma) { alert("Izaberi oba datuma za finansije!"); return; }
             try {
-                const res = await fetch(`/api/finansije?od=${odDatuma}&do=${doDatuma}`);
-                const data = await res.json();
-                document.getElementById('finansijeInfo').innerText = `Ukupan promet za period: ${data.ukupno || 0} RSD`;
+                let res = await fetch('/api/finansije?od=' + odDatuma + '&do=' + doDatuma);
+                let data = await res.json();
+                document.getElementById('finansijeInfo').innerText = 'Ukupan promet: ' + (data.ukupno || 0) + ' RSD';
             } catch(e) { console.error("Greška finansije:", e); }
         }
 
-        async function ucitajStatistiku() {
-            try {
-                const res = await fetch('/api/statistika');
-                const data = await res.json();
-                document.getElementById('statDanas').innerText = `${data.danas || 0} RSD`;
-                document.getElementById('statMesec').innerText = `${data.mesec || 0} RSD`;
-                document.getElementById('statGodina').innerText = `${data.godina || 0} RSD`;
-            } catch(e) { console.error("Greška statistika:", e); }
-        }
-
-        // Postavi default datume za finansije (tekući mesec)
-        function postaviDefaultDatume() {
-            const d = new Date();
-            const prvi = new Date(d.getFullYear(), d.getMonth(), 1);
-            const poslednji = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-            document.getElementById('finansijeOd').value = formatirajDatum(prvi);
-            document.getElementById('finansijeDo').value = formatirajDatum(poslednji);
-        }
+        // Zatvori modal na klik van njega
+        document.getElementById('detaljiKlijentaModal').addEventListener('click', function(e) {
+            if (e.target === this) zatvoriDetaljeKlijenta();
+        });
 
         // Pokretanje
         ucitajNedelju();
-        ucitajDanasnjeTermine();
         ucitajUslugeAdmin();
-        ucitajStatistiku();
-        postaviDefaultDatume();
-
-        // Zatvori modal na ESC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') zatvoriDetaljeKlijenta();
-        });
     </script>
 </body>
 </html>
