@@ -152,7 +152,11 @@ def api_slotovi(datum):
 
     while start < end:
         vreme_str = start.strftime("%H:%M")
-        status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
+        # Pauza 13:00 - 14:00
+        if "13:00" <= vreme_str < "14:00":
+            status = 'pauza'
+        else:
+            status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
         svi_slotovi.append({'vreme': vreme_str, 'status': status})
         start += timedelta(minutes=30)
 
