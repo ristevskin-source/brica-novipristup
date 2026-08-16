@@ -1,373 +1,592 @@
-import sqlite3 
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Brica</title>
+    <title>Admin Panel - Rezervacije</title>
+<style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: #121212; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; padding: 20px; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3f3f3f; padding-bottom: 16px; margin-bottom: 32px; }
+        .header h1 { color: #d4af37; font-size: 28px; font-weight: bold; }
+        .header a { background: #2d2d2d; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600; }
+        .header a:hover { background: #3d3d3d; }
+        
+        .services-box { background: #1e1e1e; border: 1px solid #3f3f3f; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+        .services-box h2 { color: #d4af37; font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+        .services-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .services-row input { background: #0d0d0d; border: 1px solid #3f3f3f; border-radius: 6px; padding: 8px 12px; color: white; font-size: 14px; }
+        .services-row input:focus { border-color: #d4af37; outline: none; }
+        .services-row input[type="text"] { width: 160px; }
+        .services-row input[type="number"] { width: 100px; }
+        .services-row input[type="number"].small { width: 80px; }
+        .btn-add { background: #d4af37; color: black; padding: 8px 20px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
+        .btn-add:hover { background: #f59e0b; }
+        
+        .service-item { background: #0d0d0d; border: 1px solid #2d2d2d; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .service-item:hover { border-color: #d4af37; }
+        .service-item .name { font-weight: 600; font-size: 14px; color: #e0e0e0; }
+        .service-item .duration { font-size: 11px; background: rgba(212, 175, 55, 0.2); color: #d4af37; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
+        .service-item .controls { display: flex; align-items: center; gap: 6px; }
+        .service-item .controls .label { font-size: 11px; color: #888; }
+        .service-item .controls input[type="number"] { width: 70px; padding: 4px 6px; border-radius: 4px; border: 1px solid #3f3f3f; background: #0d0d0d; color: white; text-align: center; font-weight: bold; font-size: 13px; }
+        .service-item .controls input[type="number"]:focus { border-color: #d4af37; outline: none; }
+        .btn-save { background: #2563eb; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-save:hover { background: #1d4ed8; }
+        .btn-delete { background: #dc2626; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-delete:hover { background: #b91c1c; }
+        .empty-message { text-align: center; padding: 12px; color: #666; font-size: 14px; }
+        .error-message { text-align: center; padding: 12px; color: #ef4444; font-size: 14px; }
+        
+        .nav-week { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 16px; border-radius: 8px; border: 1px solid #3f3f3f; margin-bottom: 24px; }
+        .nav-week button { background: #d4af37; color: black; padding: 8px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
+        .nav-week button:hover { background: #f59e0b; }
+        .nav-week span { font-weight: bold; color: #a0a0a0; }
+        
+        .table-wrap { overflow-x: auto; background: #1e1e1e; border-radius: 8px; border: 1px solid #3f3f3f; }
+        table { width: 100%; min-width: 750px; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
+        thead { background: #2d2d2d; color: #d4af37; text-transform: uppercase; font-weight: bold; text-align: center; }
+        th { padding: 12px 4px; border-bottom: 1px solid #3f3f3f; position: sticky; top: 0; background: #2d2d2d; z-index: 2; }
+        
+        /* Fiksirana kolona sa vremenom */
+        th:first-child, td:first-child { 
+            width: 80px; 
+            min-width: 80px;
+            max-width: 80px;
+            position: sticky; 
+            left: 0; 
+            background: #1e1e1e; 
+            z-index: 10; 
+            border-right: 2px solid #d4af37; 
+        }
+        th:first-child { z-index: 20; background: #2d2d2d; }
+        
+        th:not(:first-child), td:not(:first-child) { width: 140px; min-width: 140px; }
+        td { padding: 6px 2px; border: 1px solid #2d2d2d; text-align: center; }
+        td .time-label { color: #d4af37; font-weight: bold; }
+        .slot-free { color: #666; font-size: 11px; cursor: pointer; }
+        .slot-free:hover { background: #2d2d2d; }
+        .slot-booked { background: rgba(220, 38, 38, 0.3); color: #fca5a5; font-size: 12px; }
+        .slot-booked .name { font-weight: bold; font-size: 11px; }
+        .slot-booked .detail { font-size: 10px; color: #888; }
+        .slot-booked .btn-free { background: #991b1b; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; margin-top: 2px; }
+        .slot-booked .btn-free:hover { background: #7f1d1d; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: #1e1e1e; padding: 24px; border-radius: 8px; border: 1px solid #3f3f3f; width: 100%; max-width: 400px; }
+        .modal-content h3 { color: #d4af37; font-size: 18px; font-weight: bold; margin-bottom: 16px; }
+        .modal-content label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #3f3f3f; border-radius: 6px; color: white; margin-bottom: 12px; }
+        .modal-content input:focus, .modal-content select:focus { border-color: #d4af37; outline: none; }
+        .modal-actions { display: flex; gap: 8px; padding-top: 8px; }
+        .modal-actions button { flex: 1; padding: 10px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
+        .modal-actions .btn-confirm { background: #d4af37; color: black; }
+        .modal-actions .btn-confirm:hover { background: #f59e0b; }
+        .modal-actions .btn-cancel { background: #2d2d2d; color: white; }
+        .modal-actions .btn-cancel:hover { background: #3d3d3d; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
+        h1 { color: #333; }
+        .nav-container { margin-bottom: 20px; }
+        button { padding: 8px 15px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #007bff; color: white; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💈 Admin Panel - Brica</h1>
+            <a href="/">Nazad na sajt</a>
+        </div>
 
-app = Flask(__name__)
-DB_NAME = 'brica.db'
+        <div class="services-box">
+            <h2>📋 Upravljanje uslugama i cenama</h2>
+            <div class="services-row">
+                <input type="text" id="novoIme" placeholder="Naziv usluge">
+                <input type="number" id="novaCena" placeholder="Cena">
+                <input type="number" id="novoTrajanje" placeholder="Trajanje" value="30" class="small">
+                <button onclick="dodajNovuUslugu()" class="btn-add">➕ Dodaj uslugu</button>
+            </div>
+            <div id="listaUslugaAdmin">
+                <div class="empty-message">⏳ Učitavanje usluga...</div>
+            </div>
+        </div>
+        <div class="services-box" style="margin-bottom: 24px;">
+    <h2>📊 Zarada i Statistika</h2>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px;">
+        <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+            <span style="font-size: 12px; color: #888;">Danas</span>
+            <div id="zaradaDanas" style="font-size: 20px; font-weight: bold; color: #4ade80; margin-top: 4px;">0 RSD</div>
+        </div>
+        <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+            <span style="font-size: 12px; color: #888;">Ovaj mesec</span>
+            <div id="zaradaMesec" style="font-size: 20px; font-weight: bold; color: #d4af37; margin-top: 4px;">0 RSD</div>
+        </div>
+        <div style="background: #0d0d0d; border: 1px solid #3f3f3f; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 150px;">
+            <span style="font-size: 12px; color: #888;">Ova godina</span>
+            <div id="zaradaGodina" style="font-size: 20px; font-weight: bold; color: #60a5fa; margin-top: 4px;">0 RSD</div>
+        </div>
+    </div>
+</div>
 
-def get_connection():
-conn = sqlite3.connect(DB_NAME)
-conn.row_factory = sqlite3.Row
-return conn
+        <div class="nav-week">
+            <button onclick="promeniNedelju(-1)">← Prethodna nedelja</button>
+            <span id="rasponNedelje"></span>
+            <button onclick="promeniNedelju(1)">Sledeća nedelja →</button>
+        </div>
 
-def init_db():
-conn = get_connection()
-c = conn.cursor()
-c.execute('''
-       CREATE TABLE IF NOT EXISTS usluge (
-           id INTEGER PRIMARY KEY AUTOINCREMENT,
-           ime TEXT NOT NULL,
-           cena INTEGER NOT NULL,
-           trajanje INTEGER NOT NULL
-       )
-   ''')
-c.execute("SELECT COUNT(*) FROM usluge")
-if c.fetchone()[0] == 0:
-c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje', 1000, 30)")
-c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Brada / Brijanje', 600, 30)")
-c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje + Brada', 1500, 60)")
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr id="zaglavljeTabele">
+                        <th>Vreme</th>
+                    </tr>
+                </thead>
+                <tbody id="teloTabele">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="novaRezervacijaModal" class="modal">
+        <div class="modal-content">
+            <h3>Zakazivanje termina</h3>
+            <input type="hidden" id="adminDatum">
+            <input type="hidden" id="adminVreme">
+            <label>Ime klijenta:</label>
+            <input type="text" id="adminIme">
+            <label>Telefon:</label>
+            <input type="text" id="adminTel">
+            <label>Usluga:</label>
+            <select id="adminUsluga"></select>
+            <div class="modal-actions">
+                <button onclick="sacuvajAdminZakazivanje()" class="btn-confirm">Potvrdi</button>
+                <button onclick="zatvoriNovoZakazivanje()" class="btn-cancel">Otkaži</button>
+            </div>
+        </div>
+    <h1>Admin Panel</h1>
     
+    <div class="nav-container">
+        <button onclick="promeniNedelju(-1)">Prethodna</button>
+        <span id="rasponNedelje" style="font-weight: bold; margin: 0 15px;"></span>
+        <button onclick="promeniNedelju(1)">Sledeća</button>
+</div>
 
-c.execute('''
-       CREATE TABLE IF NOT EXISTS rezervacije (
-           id INTEGER PRIMARY KEY AUTOINCREMENT,
-           datum TEXT NOT NULL,
-           vreme TEXT NOT NULL,
-           ime TEXT,
-           telefon TEXT,
-           usluga TEXT,
-           cena INTEGER,
-           status TEXT DEFAULT 'zakazan'
-       )
-   ''')
-
-c.execute('''
-       CREATE TABLE IF NOT EXISTS naplate (
-           id INTEGER PRIMARY KEY AUTOINCREMENT,
-           datum TEXT NOT NULL,
-           vreme TEXT NOT NULL,
-           klijent TEXT,
-           usluga TEXT,
-           cena INTEGER NOT NULL,
-           kreirano TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-       )
-   ''')
-conn.commit()
-conn.close()
-
-def zabelezi_naplatu(datum, vreme, klijent, usluga, cena):
-conn = get_connection()
-c = conn.cursor()
-c.execute('''
-       INSERT INTO naplate (datum, vreme, klijent, usluga, cena)
-       VALUES (?, ?, ?, ?, ?)
-   ''', (datum, vreme, klijent, usluga, cena))
-conn.commit()
-conn.close()
-
-def uzmi_statistiku_zarade():
-conn = get_connection()
-c = conn.cursor()
-    
-    # Dnevna zarada
-
-c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE datum = DATE('now')")
-danas = c.fetchone()[0]
-    
-    # Mesečna zarada
-
-c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y-%m', datum) = strftime('%Y-%m', 'now')")
-mesec = c.fetchone()[0]
-
-    # Godišnja zarada
-c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y', datum) = strftime('%Y', 'now')")
-godina = c.fetchone()[0]
-    
-
-conn.close()
-return {"danas": danas, "mesec": mesec, "godina": godina}
-
-init_db()
-
-def get_raspored_za_period(pocetak_str, kraj_str):
-conn = get_connection()
-c = conn.cursor()
-    c.execute("""
-    c.execute('''
-       SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, COALESCE(u.trajanje, 30) as trajanje
-       FROM rezervacije r
-       LEFT JOIN usluge u ON r.usluga = u.ime
-       WHERE r.datum >= ? AND r.datum <= ? AND r.status = 'zakazan'
-    """, (pocetak_str, kraj_str))
-    
-    ''', (pocetak_str, kraj_str))
-
-rows = c.fetchall()
-conn.close()
-    
-
-rezultat = {}
-for r in rows:
-datum = r["datum"]
-vreme = r["vreme"]
-if datum not in rezultat:
-rezultat[datum] = {}
+    <!-- Modal za detalje klijenta -->
+    <div id="detaljiKlijentaModal" class="modal">
+        <div class="modal-content">
+            <h3>📋 Detalji rezervacije</h3>
+            <p style="margin-bottom: 8px; color: #aaa; font-size: 13px;">Datum i vreme: <strong id="detaljiVreme" style="color:#d4af37;"></strong></p>
+            <p style="margin-bottom: 8px; color: #aaa; font-size: 13px;">Klijent: <strong id="detaljiIme" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 8px; color: #aaa; font-size: 13px;">Usluga: <strong id="detaljiUsluga" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 16px; color: #aaa; font-size: 13px;">Cena: <strong id="detaljiCena" style="color:#4ade80;"></strong> RSD</p>
             
+            <input type="hidden" id="otkaziDatum">
+            <input type="hidden" id="otkaziVreme">
 
-rezultat[datum][vreme] = {
-"status": "zauzet",
-"ime": r["ime"],
-"usluga": r["usluga"],
-"cena": r["cena"],
-"trajanje": r["trajanje"]
+            <div class="modal-actions">
+                <button onclick="naplatiTerminIzModala()" class="btn-confirm" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
+                <button onclick="potvrdiOtkazivanjeIzModala()" class="btn-cancel" style="background:#dc2626;">🗑️ Otkaži</button>
+                <button onclick="zatvoriDetaljeKlijenta()" class="btn-cancel">Zatvori</button>
+            </div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr id="zaglavljeTabele"></tr>
+        </thead>
+        <tbody id="teloTabele">
+            <!-- Ovde se upisuju redovi -->
+        </tbody>
+    </table>
+
+<script>
+    let trenutniPocetniDan = new Date();
+
+    function formatirajDatum(d) {
+        return d.toISOString().split('T')[0];
+    }
+        let trenutniPocetniDan = new Date();
+
+    function promeniNedelju(smer) {
+        trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
+        ucitajNedelju();
+    }
+
+    async function ucitajNedelju() {
+    let dani = [];
+    let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+    let headerRow = '<th>Vreme</th>';
+    
+    let d = new Date(trenutniPocetniDan);
+    while(dani.length < 6) {
+        if (d.getDay() !== 0) {
+            let dStr = formatirajDatum(d);
+            dani.push(dStr);
+            let imeDana = imenaDana[d.getDay()];
+            headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+        function formatirajDatum(d) {
+            return d.toISOString().split('T')[0];
 }
-return rezultat
+        d.setDate(d.getDate() + 1);
+    }
+    document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
-# --- FLASK RUTE ZA PRIKAZ STRANICA ---
-@app.route('/')
-def index():
-return render_template('index.html')
+    let prviDan = dani[0];
+    let poslednjiDan = dani[dani.length - 1];
+    document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
-@app.route('/admin')
-def admin():
-    return render_template('admin.html', v='1.1')
-    return render_template('admin.html', v='1.2')
-
-# --- API RUTE ---
-@app.route('/api/slotovi/<datum>', methods=['GET'])
-def api_slotovi(datum):
-    # Ako je nedelja (weekday() == 6), vrati praznu listu - nema slobodnih termina
-dt = datetime.strptime(datum, "%Y-%m-%d")
-if dt.weekday() == 6:
-return jsonify([])
-conn = get_connection()
-c = conn.cursor()
-    c.execute("""
-    c.execute('''
-       SELECT r.vreme, COALESCE(u.trajanje, 30) as trajanje
-       FROM rezervacije r
-       LEFT JOIN usluge u ON r.usluga = u.ime
-       WHERE r.datum = ? AND r.status = 'zakazan'
-    """, (datum,))
-    ''', (datum,))
-rezervacije = c.fetchall()
-conn.close()
-
-zauzeti_slotovi = set()
-for r in rezervacije:
-pocetak = datetime.strptime(r['vreme'], "%H:%M")
-trajanje = int(r['trajanje'])
-trenutni = pocetak
-kraj = pocetak + timedelta(minutes=trajanje)
-while trenutni < kraj:
-zauzeti_slotovi.add(trenutni.strftime("%H:%M"))
-trenutni += timedelta(minutes=30)
-
-svi_slotovi = []
-start = datetime.strptime("09:00", "%H:%M")
-end = datetime.strptime("20:00", "%H:%M")
-
-while start < end:
-vreme_str = start.strftime("%H:%M")
-status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
-svi_slotovi.append({'vreme': vreme_str, 'status': status})
-start += timedelta(minutes=30)
-
-return jsonify(svi_slotovi)
-
-@app.route('/api/usluge', methods=['GET', 'POST'])
-def api_usluge():
-conn = get_connection()
-c = conn.cursor()
-if request.method == 'GET':
-c.execute("SELECT * FROM usluge")
-usluge = [dict(row) for row in c.fetchall()]
-conn.close()
-return jsonify(usluge)
-elif request.method == 'POST':
-data = request.get_json()
-ime = data.get('ime')
-cena = data.get('cena')
-trajanje = data.get('trajanje', 30)
-c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
-conn.commit()
-conn.close()
-        return jsonify({'status': 'ok', 'id': c.lastrowid})
-
-@app.route('/api/usluge/<int:id>', methods=['PUT', 'DELETE'])
-def api_usluga_id(id):
-    conn = get_connection()
-    c = conn.cursor()
-
-    if request.method == 'PUT':
-        data = request.get_json()
-        ime = data.get('ime')
-        cena = data.get('cena')
-        trajanje = data.get('trajanje', 30)
-        c.execute("UPDATE usluge SET ime=?, cena=?, trajanje=? WHERE id=?", (ime, cena, trajanje, id))
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'ok'})
-
-    elif request.method == 'DELETE':
-        c.execute("DELETE FROM usluge WHERE id=?", (id,))
-        conn.commit()
-        conn.close()
-return jsonify({'status': 'ok'})
-
-@app.route('/api/zakazi', methods=['POST'])
-def api_zakazi():
-data = request.get_json()
-datum = data.get('datum')
-vreme = data.get('vreme')
+    async function ucitajNedelju() {
+    let dani = [];
+    let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+    let headerRow = '<th>Vreme</th>';
     
-    # 1. Provera: Nedeljom ne radimo (6 = nedelja)
+    let d = new Date(trenutniPocetniDan);
+    while(dani.length < 6) {
+        if (d.getDay() !== 0) {
+            let dStr = formatirajDatum(d);
+            dani.push(dStr);
+            let imeDana = imenaDana[d.getDay()];
+            headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+        }
+        d.setDate(d.getDate() + 1);
+    }
+    document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
-dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
-if dt_zakazi.weekday() == 6:
-return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
-
-    # 2. Provera: Sprečavanje zakazivanja u prošlosti (SRB vreme UTC+2)
-srbija_vreme = datetime.utcnow() + timedelta(hours=2)
-danas_str = srbija_vreme.strftime('%Y-%m-%d')
-if datum < danas_str:
-return jsonify({'status': 'error', 'poruka': 'Nije moguće zakazati u prošlosti!'}), 400
-        
-
-if datum == danas_str:
-trenutno_vreme = srbija_vreme.strftime('%H:%M')
-if vreme < trenutno_vreme:
-return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
-
-ime = data.get('ime')
-telefon = data.get('telefon')
-usluga = data.get('usluga')
-cena = data.get('cena')
-    
-
-conn = get_connection()
-c = conn.cursor()
-    c.execute("""
-    c.execute('''
-       INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-    """, (datum, vreme, ime, telefon, usluga, cena))
-    ''', (datum, vreme, ime, telefon, usluga, cena))
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/otkazi', methods=['POST'])
-def api_otkazi():
-    data = request.get_json()
-    datum = data.get('datum')
-    vreme = data.get('vreme')
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
-conn.commit()
-conn.close()
-return jsonify({'status': 'ok'})
-
-@app.route('/api/naplati', methods=['POST'])
-def api_naplati():
-data = request.json
-datum = data.get('datum')
-vreme = data.get('vreme')
-ime = data.get('ime', '')
-usluga = data.get('usluga', '')
-cena = data.get('cena', 0)
-    
-
-zabelezi_naplatu(datum, vreme, ime, usluga, cena)
-    
-
-conn = get_connection()
-c = conn.cursor()
-c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
-conn.commit()
-conn.close()
-return jsonify({"status": "ok"})
-
-@app.route('/api/statistika', methods=['GET'])
-def api_statistika():
-statistika = uzmi_statistiku_zarade()
-return jsonify(statistika)
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
-@app.route('/api/finansije', methods=['GET'])
-def api_finansije():
-    od_datuma = request.args.get('od')
-    do_datuma = request.args.get('do')
-
-    conn = get_connection()
-    c = conn.cursor()
-
-    if od_datuma and do_datuma:
-        c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE datum BETWEEN ? AND ?", (od_datuma, do_datuma))
-    else:
-        c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate")
-
-    ukupno = c.fetchone()[0]
-    conn.close()
-    return jsonify({"ukupno": ukupno})
-
-@app.route('/api/rezervacije', methods=['GET'])
-def api_rezervacije():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT * FROM rezervacije WHERE status='zakazan' ORDER BY datum DESC, vreme DESC")
-    rezervacije = [dict(row) for row in c.fetchall()]
-    conn.close()
-    return jsonify(rezervacije)
-
-@app.route('/api/nedelja', methods=['GET'])
-def api_nedelja():
-pocetak = request.args.get('pocetak')
-kraj = request.args.get('kraj')
-    
-
-if not pocetak or not kraj:
-try:
-offset = int(request.args.get('offset', 0))
-except ValueError:
-offset = 0
+    let prviDan = dani[0];
+    let poslednjiDan = dani[dani.length - 1];
+    document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
+        async function ucitajNedelju() {
+            let dani = [];
+            let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+            let headerRow = '<th>Vreme</th>';
             
+            let d = new Date(trenutniPocetniDan);
+            while(dani.length < 6) {
+                if (d.getDay() !== 0) {
+                    let dStr = formatirajDatum(d);
+                    dani.push(dStr);
+                    let imeDana = imenaDana[d.getDay()];
+                    headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#666;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
-danas = datetime.now()
-ponedeljak = danas - timedelta(days=danas.weekday()) + timedelta(weeks=offset)
-nedelja = ponedeljak + timedelta(days=6)
+            let prviDan = dani[0];
+            let poslednjiDan = dani[dani.length - 1];
+            document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
+
+            try {
+                let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+                let podaci = await res.json();
+                
+                console.log("PODACI SA SERVERA:", podaci);
+                console.log("DANI KOJI SE TRAŽE:", dani);
+                
+                let zauzetiBlokovi = {};
+                if (podaci) {
+                    Object.keys(podaci).forEach(datum => {
+                        Object.keys(podaci[datum]).forEach(vreme => {
+                            let klijent = podaci[datum][vreme];
+                            if (klijent) {
+                                let trajanje = klijent.trajanje || 30;
+                                let [h, m] = vreme.split(':').map(Number);
+                                let ukupnoSlotova = Math.ceil(trajanje / 30);
+                                for (let i = 0; i < ukupnoSlotova; i++) {
+                                    let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                    if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
+                                    zauzetiBlokovi[datum][slotVreme] = klijent;
+                                    m += 30;
+                                    if (m >= 60) {
+                                        h += 1;
+                                        m -= 60;
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+
+    try {
+        let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+        let podaci = await res.json();
         
+        console.log("PODACI SA SERVERA:", podaci);
+        console.log("DANI KOJI SE TRAŽE:", dani);
+        
+        let zauzetiBlokovi = {};
+        if (podaci) {
+            Object.keys(podaci).forEach(datum => {
+                Object.keys(podaci[datum]).forEach(vreme => {
+                    let klijent = podaci[datum][vreme];
+                    if (klijent) {
+                        let trajanje = klijent.trajanje || 30;
+                        let [h, m] = vreme.split(':').map(Number);
+                        let ukupnoSlotova = Math.ceil(trajanje / 30);
+                        for (let i = 0; i < ukupnoSlotova; i++) {
+                            let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                            if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
+                            zauzetiBlokovi[datum][slotVreme] = klijent;
+                            m += 30;
+                            if (m >= 60) {
+                                h += 1;
+                                m -= 60;
+                let bodyHtml = '';
+                let pocetniSat = 8;
+                let krajnjiSat = 20;
 
-pocetak = ponedeljak.strftime('%Y-%m-%d')
-kraj = nedelja.strftime('%Y-%m-%d')
+                for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
+                    for (let min of [0, 30]) {
+                        let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                        bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
 
-conn = get_connection()
-c = conn.cursor()
-    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
-    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ? AND status='zakazan'", (pocetak, kraj))
-rezervacije = c.fetchall()
-conn.close()
-    
-
-raspored = {}
-for r in rezervacije:
-datum, vreme, ime, usluga, cena, telefon, status = r
-if datum not in raspored:
-raspored[datum] = {}
-raspored[datum][vreme] = {
-'ime': ime,
-'usluga': usluga,
-'cena': cena,
-'telefon': telefon,
-'status': status,
-'trajanje': 30
+                        for (let datum of dani) {
+                            let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
+                            if (rezervacija) {
+                                bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
+                                    <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
+                                    <small>${rezervacija.usluga || ''}</small>
+                                </td>`;
+                            } else {
+                                bodyHtml += `<td style="color:#ccc;">-</td>`;
 }
+}
+                    }
+                });
+            });
+        }
+
+        let bodyHtml = '';
+        let pocetniSat = 8;
+        let krajnjiSat = 20;
+
+        for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
+            for (let min of [0, 30]) {
+                let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                bodyHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${vremeSlot}</td>`;
+
+                for (let datum of dani) {
+                    let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
+                    if (rezervacija) {
+                        bodyHtml += `<td style="background:#e0f7fa; border:1px solid #b2ebf2;">
+                            <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
+                            <small>${rezervacija.usluga || ''}</small>
+                        </td>`;
+                    } else {
+                        bodyHtml += `<td style="color:#ccc;">-</td>`;
+                        bodyHtml += `</tr>`;
+}
+}
+                bodyHtml += `</tr>`;
+            }
+        }
+        document.getElementById('teloTabele').innerHTML = bodyHtml;
+
+    } catch (err) {
+        console.error("Greška pri učitavanju nedelje:", err);
+    }
+}
+
+async function otvoriZakazivanje(datum, vreme) {
+    document.getElementById('adminDatum').value = datum;
+    document.getElementById('adminVreme').value = vreme;
+    document.getElementById('adminIme').value = '';
+    document.getElementById('adminTel').value = '';
+}
+        try {
+            let res = await fetch('/api/usluge');
+            let usluge = await res.json();
+            let select = document.getElementById('adminUsluga');
+            select.innerHTML = usluge.map(u => '<option value="' + u.ime + '|' + u.cena + '">' + u.ime + ' (' + u.cena + ' RSD)</option>').join('');
+        } catch(e) {
+            console.error('Greška:', e);
+        }
+        document.getElementById('novaRezervacijaModal').classList.add('show');
+    }
+
+    function zatvoriNovoZakazivanje() {
+        document.getElementById('novaRezervacijaModal').classList.remove('show');
+    }
+                document.getElementById('teloTabele').innerHTML = bodyHtml;
+
+    async function sacuvajAdminZakazivanje() {
+        const datum = document.getElementById('adminDatum').value;
+        const vreme = document.getElementById('adminVreme').value;
+        const ime = document.getElementById('adminIme').value;
+        const telefon = document.getElementById('adminTel').value;
+        const uslugaVal = document.getElementById('adminUsluga').value.split('|');
+        const usluga = uslugaVal[0];
+        const cena = parseInt(uslugaVal[1]);
+
+        const res = await fetch('/api/zakazi', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, telefon: telefon, usluga: usluga, cena: cena })
+        });
+        const data = await res.json();
+        if(data.status === 'ok') {
+            zatvoriNovoZakazivanje();
+            ucitajNedelju();
+        } else {
+            alert(data.poruka || 'Greška pri zakazivanju!');
+        }
+    }
+
+    async function ucitajUslugeAdmin() {
+        const container = document.getElementById('listaUslugaAdmin');
+        if (!container) return;
+        try {
+            const res = await fetch('/api/usluge');
+            if (!res.ok) throw new Error('HTTP greška: ' + res.status);
+            const usluge = await res.json();
+            if (usluge.length === 0) {
+                container.innerHTML = '<div class="empty-message">📭 Nema dodatih usluga</div>';
+                return;
+            } catch (err) {
+                console.error("Greška pri učitavanju nedelje:", err);
+}
+            container.innerHTML = usluge.map(u => 
+                '<div class="service-item">' +
+                    '<div>' +
+                        '<span class="name">' + u.ime + '</span>' +
+                        '<span class="duration">' + (u.trajanje || 30) + ' min</span>' +
+                    '</div>' +
+                    '<div class="controls">' +
+                        '<span class="label">RSD</span>' +
+                        '<input type="number" id="cena-' + u.id + '" value="' + u.cena + '" min="0" step="50">' +
+                        '<button class="btn-save" onclick="sacuvajCenu(' + u.id + ')">💾 Sačuvaj</button>' +
+                        '<button class="btn-delete" onclick="obrisiUslugu(' + u.id + ')">🗑️ Obriši</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
+        } catch (error) {
+            console.error('Greška:', error);
+            container.innerHTML = '<div class="error-message">❌ Greška pri učitavanju usluga</div>';
+        }
+    }
+
+    async function dodajNovuUslugu() {
+        const imeInput = document.getElementById('novoIme');
+        const cenaInput = document.getElementById('novaCena');
+        const trajanjeInput = document.getElementById('novoTrajanje');
+
+        const ime = imeInput.value.trim();
+        const cena = cenaInput.value.trim();
+        const trajanje = trajanjeInput.value.trim() || 30;
+
+        if (!ime || !cena) {
+            alert('⚠️ Unesite naziv i cenu usluge!');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/usluge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ime: ime, cena: parseInt(cena), trajanje: parseInt(trajanje) })
+            });
+            if (!res.ok) throw new Error('Greška pri dodavanju');
+            imeInput.value = '';
+            cenaInput.value = '';
+            ucitajUslugeAdmin();
+        } catch (error) {
+            alert('❌ Greška: ' + error.message);
+        }
+    }
+
+    async function sacuvajCenu(id) {
+        const cenaInput = document.getElementById('cena-' + id);
+        const novaCena = parseInt(cenaInput.value);
+        if (isNaN(novaCena) || novaCena < 0) {
+            alert('⚠️ Unesite ispravnu cenu!');
+            return;
+        }
+        try {
+            const res = await fetch('/api/usluge/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cena: novaCena })
+            });
+            if (!res.ok) throw new Error('Greška pri ažuriranju');
+            alert('✅ Cena uspešno izmenjena!');
+            ucitajUslugeAdmin();
+        } catch (error) {
+            alert('❌ Greška: ' + error.message);
+}
+    }
+
+    function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena, tel) {
+        document.getElementById('otkaziDatum').value = datum;
+        document.getElementById('otkaziVreme').value = vreme;
+        document.getElementById('detaljiVreme').innerText = `${datum} u ${vreme}`;
+        document.getElementById('detaljiIme').innerText = ime ? `${ime} ${tel ? '(' + tel + ')' : ''}` : 'Nije uneseno';
+        document.getElementById('detaljiUsluga').innerText = usluga || 'Nije uneseno';
+        document.getElementById('detaljiCena').innerText = cena || '0';
         
+        document.getElementById('detaljiKlijentaModal').classList.add('show');
+    }
 
-return jsonify(raspored)
+    function zatvoriDetaljeKlijenta() {
+        document.getElementById('detaljiKlijentaModal').classList.remove('show');
+    }
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    async function potvrdiOtkazivanjeIzModala() {
+        const datum = document.getElementById('otkaziDatum').value;
+        const vreme = document.getElementById('otkaziVreme').value;
+        if (confirm('Da li ste sigurni da želite da oslobodite ovaj termin?')) {
+            await fetch('/api/otkazi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ datum: datum, vreme: vreme })
+            });
+            zatvoriDetaljeKlijenta();
+        function promeniNedelju(smer) {
+            trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
+ucitajNedelju();
+}
+    }
+    async function naplatiTerminIzModala() {
+        const datum = document.getElementById('otkaziDatum').value;
+        const vreme = document.getElementById('otkaziVreme').value;
+        const ime = document.getElementById('detaljiIme').innerText;
+        const usluga = document.getElementById('detaljiUsluga').innerText;
+        const cenaText = document.getElementById('detaljiCena').innerText;
+        const cena = parseInt(cenaText) || 0;
+        
+        await fetch('/api/naplati', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, usluga: usluga, cena: cena })
+        });
+        
+        zatvoriDetaljeKlijenta();
+        ucitajNedelju();
+        ucitajStatistiku();
+    }
+
+    async function ucitajStatistiku() {
+        try {
+            const res = await fetch('/api/statistika');
+            const podaci = await res.json();
+            document.getElementById('zaradaDanas').innerText = `${podaci.danas} RSD`;
+            document.getElementById('zaradaMesec').innerText = `${podaci.mesec} RSD`;
+            document.getElementById('zaradaGodina').innerText = `${podaci.godina} RSD`;
+        } catch (e) {
+            console.error("Greška pri učitavanju statistike:", e);
+        }
+    }
+
+    try { ucitajNedelju(); } catch (e) { console.error("Greška nedelja:", e); }
+    try { ucitajUslugeAdmin(); } catch (e) { console.error("Greška usluge:", e); }
+    try { ucitajStatistiku(); } catch (e) { console.error("Greška statistika:", e); }
+</script>
+        // Pokretanje pri učitavanju
+        ucitajNedelju();
+    </script>
+</body>
+</html>
