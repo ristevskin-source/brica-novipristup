@@ -1,11 +1,14 @@
-import os
 import sqlite3 
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-# Allow overriding DB name/path via environment variable for deployment flexibility
-DB_NAME = os.environ.get('DB_NAME', 'brica.db')
+DB_NAME = 'brica.db'
+
+# Simple favicon route to avoid 404 in browser console
+@app.route('/favicon.ico')
+def favicon():
+    return ('', 204)
 
 def get_connection():
     conn = sqlite3.connect(DB_NAME)
