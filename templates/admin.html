@@ -10,9 +10,9 @@
         button { padding: 8px 16px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 4px; font-weight: bold; transition: background 0.2s; }
         button:hover { background: #2563eb; }
         #rasponNedelje { font-size: 16px; color: #a1a1aa; font-weight: bold; }
-        
+
         .section { background: #1e1e1e; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #27272a; clear: both; }
-        
+
         .table-responsive { overflow-x: auto; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; background: #18181b; min-width: 800px; }
         th, td { border: 1px solid #27272a; padding: 12px 10px; text-align: center; vertical-align: middle; }
@@ -22,8 +22,7 @@
 
         .form-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
         input, select { padding: 8px; border: 1px solid #3f3f46; border-radius: 4px; background: #27272a; color: white; }
-        
-        /* Uklanjanje strelica za number polja da se normalno kuca */
+
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -35,16 +34,23 @@
         .usluga-item { display: flex; justify-content: space-between; align-items: center; background: #27272a; padding: 12px 15px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #3f3f46; flex-wrap: wrap; gap: 10px; }
         .usluga-inputs { display: flex; gap: 10px; align-items: center; }
 
-        /* Modal stilovi */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
         .modal-content { background: #1e1e1e; padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #3f3f46; }
         .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+
+        .today-header { background: #d4af37 !important; color: #000 !important; }
+        .today-cell { border-top: 2px solid #d4af37; }
+        .pauza-cell { background: #18181b; color: #52525b; font-size: 10px; }
     </style>
+<base target="_blank">
 </head>
 <body>
 
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>Admin Panel - Upravljanje</h1>
-    
+    <a href="/" style="color:#3b82f6; text-decoration:none; font-size:14px; font-weight:bold;">← Nazad na sajt</a>
+</div>
+
     <!-- SEKCIJA: Kalendar i Nedelja -->
     <div class="section">
         <h2>Pregled termina po nedeljama</h2>
@@ -52,6 +58,7 @@
             <button onclick="promeniNedelju(-1)">Prethodna</button>
             <span id="rasponNedelje"></span>
             <button onclick="promeniNedelju(1)">Sledeća</button>
+            <button onclick="idiNaTrenutnuNedelju()" style="background:#16a34a;">Danas</button>
         </div>
 
         <div class="table-responsive">
@@ -60,7 +67,6 @@
                     <tr id="zaglavljeTabele"></tr>
                 </thead>
                 <tbody id="teloTabele">
-                    <!-- Ovde se upisuju redovi -->
                 </tbody>
             </table>
         </div>
@@ -80,7 +86,7 @@
     <!-- SEKCIJA: Upravljanje uslugama i cenama -->
     <div class="section">
         <h2>Usluge, Cene i Trajanje</h2>
-        
+
         <h3>Dodaj novu uslugu</h3>
         <div class="form-group">
             <input type="text" id="novaUslugaNaziv" placeholder="Naziv usluge">
@@ -101,11 +107,15 @@
             <h3>📋 Detalji rezervacije</h3>
             <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Datum i vreme: <strong id="detaljiVreme" style="color:#d4af37;"></strong></p>
             <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Klijent: <strong id="detaljiIme" style="color:#fff;"></strong></p>
+            <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Telefon: <strong id="detaljiTelefon" style="color:#22d3ee;"></strong></p>
             <p style="margin-bottom: 8px; color: #a1a1aa; font-size: 13px;">Usluga: <strong id="detaljiUsluga" style="color:#fff;"></strong></p>
             <p style="margin-bottom: 16px; color: #a1a1aa; font-size: 13px;">Cena: <strong id="detaljiCena" style="color:#4ade80;"></strong> RSD</p>
 
             <input type="hidden" id="otkaziDatum">
             <input type="hidden" id="otkaziVreme">
+            <input type="hidden" id="otkaziIme">
+            <input type="hidden" id="otkaziUsluga">
+            <input type="hidden" id="otkaziCena">
 
             <div class="modal-actions">
                 <button onclick="naplatiTerminIzModala()" style="background:#16a34a; color:white;">💵 Naplaćeno</button>
@@ -116,53 +126,74 @@
     </div>
 
     <script>
-        let trenutniPocetniDan = new Date();
+        let trenutniOffset = 0;
+        const imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
 
+        // === ISPRAVKA 1: Lokalni datum (NE toISOString!) ===
         function formatirajDatum(d) {
-            return d.toISOString().split('T')[0];
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        // === ISPRAVKA 2: Uvek kreći od ponedeljka ===
+        function getPonedeljak(offset) {
+            const d = new Date();
+            const day = d.getDay(); // 0=ned, 1=pon...
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
+            const ponedeljak = new Date(d.setDate(diff));
+            return new Date(ponedeljak.setHours(0, 0, 0, 0));
         }
 
         function promeniNedelju(smer) {
-            trenutniPocetniDan.setDate(trenutniPocetniDan.getDate() + (smer * 7));
+            trenutniOffset += smer;
+            ucitajNedelju();
+        }
+
+        function idiNaTrenutnuNedelju() {
+            trenutniOffset = 0;
             ucitajNedelju();
         }
 
         async function ucitajNedelju() {
-            let dani = [];
-            let imenaDana = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+            const ponedeljak = getPonedeljak(trenutniOffset);
+            const dani = [];
             let headerRow = '<th>Vreme</th>';
-            
-            let d = new Date(trenutniPocetniDan);
-            while(dani.length < 6) {
-                if (d.getDay() !== 0) {
-                    let dStr = formatirajDatum(d);
-                    dani.push(dStr);
-                    let imeDana = imenaDana[d.getDay()];
-                    headerRow += '<th>' + imeDana + '<br><span style="font-size:10px;color:#a1a1aa;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
-                }
-                d.setDate(d.getDate() + 1);
+            const danasStr = formatirajDatum(new Date());
+
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(ponedeljak);
+                d.setDate(ponedeljak.getDate() + i);
+                const dStr = formatirajDatum(d);
+                dani.push(dStr);
+                const imeDana = imenaDana[d.getDay()];
+                const isToday = (dStr === danasStr) ? 'today-header' : '';
+                headerRow += '<th class="' + isToday + '">' + imeDana + '<br><span style="font-size:10px;color:#a1a1aa;">' + dStr.split('-').slice(1).join('.') + '</span></th>';
             }
             document.getElementById('zaglavljeTabele').innerHTML = headerRow;
 
-            let prviDan = dani[0];
-            let poslednjiDan = dani[dani.length - 1];
+            const prviDan = dani[0];
+            const poslednjiDan = dani[dani.length - 1];
             document.getElementById('rasponNedelje').innerText = prviDan + ' do ' + poslednjiDan;
 
             try {
-                let res = await fetch(`/api/nedelja?pocetak=${prviDan}&kraj=${poslednjiDan}`);
+                let res = await fetch('/api/nedelja?pocetak=' + prviDan + '&kraj=' + poslednjiDan);
                 let podaci = await res.json();
-                
+
                 let zauzetiBlokovi = {};
                 if (podaci) {
-                    Object.keys(podaci).forEach(datum => {
-                        Object.keys(podaci[datum]).forEach(vreme => {
+                    Object.keys(podaci).forEach(function(datum) {
+                        Object.keys(podaci[datum]).forEach(function(vreme) {
                             let klijent = podaci[datum][vreme];
                             if (klijent) {
                                 let trajanje = klijent.trajanje || 30;
-                                let [h, m] = vreme.split(':').map(Number);
+                                let parts = vreme.split(':');
+                                let h = parseInt(parts[0]);
+                                let m = parseInt(parts[1]);
                                 let ukupnoSlotova = Math.ceil(trajanje / 30);
                                 for (let i = 0; i < ukupnoSlotova; i++) {
-                                    let slotVreme = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                                    let slotVreme = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
                                     if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
                                     zauzetiBlokovi[datum][slotVreme] = klijent;
                                     m += 30;
@@ -177,42 +208,57 @@
                 }
 
                 let bodyHtml = '';
-                let pocetniSat = 8;
+                let pocetniSat = 9;
                 let krajnjiSat = 20;
 
                 for (let sat = pocetniSat; sat < krajnjiSat; sat++) {
                     for (let min of [0, 30]) {
-                        let vremeSlot = `${String(sat).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                        bodyHtml += `<tr><td style="font-weight:bold; background:#27272a;">${vremeSlot}</td>`;
+                        let vremeSlot = String(sat).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+                        let isPauza = (vremeSlot >= "13:00" && vremeSlot < "14:00");
+                        bodyHtml += '<tr><td style="font-weight:bold; background:#27272a;">' + vremeSlot + '</td>';
 
                         for (let datum of dani) {
+                            let isTodayCol = (datum === danasStr) ? 'today-cell' : '';
                             let rezervacija = zauzetiBlokovi[datum] && zauzetiBlokovi[datum][vremeSlot];
-                            if (rezervacija) {
-                                bodyHtml += `<td onclick="otvoriDetaljeKlijenta('${datum}', '${vremeSlot}', '${rezervacija.ime || ''}', '${rezervacija.usluga || ''}', '${rezervacija.cena || 0}')" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;">
-                                    <strong>${rezervacija.ime || 'Rezervisano'}</strong><br>
-                                    <small>${rezervacija.usluga || ''}</small>
-                                </td>`;
+
+                            if (isPauza) {
+                                bodyHtml += '<td class="pauza-cell ' + isTodayCol + '">PAUZA</td>';
+                            } else if (rezervacija) {
+                                let safeIme = (rezervacija.ime || '').replace(/'/g, "\'");
+                                let safeUsluga = (rezervacija.usluga || '').replace(/'/g, "\'");
+                                let safeTelefon = (rezervacija.telefon || '').replace(/'/g, "\'");
+                                bodyHtml += '<td onclick="otvoriDetaljeKlijenta(' + 
+                                    "'" + datum + "', '" + vremeSlot + "', '" + safeIme + "', '" + safeUsluga + "', '" + (rezervacija.cena || 0) + "', '" + safeTelefon + "')" + 
+                                    '" style="background:#0e495a; border:1px solid #164e63; cursor:pointer;" class="' + isTodayCol + '">' +
+                                    '<strong>' + (rezervacija.ime || 'Rezervisano') + '</strong><br>' +
+                                    '<small>' + (rezervacija.usluga || '') + '</small>' +
+                                    '</td>';
                             } else {
-                                bodyHtml += `<td style="color:#52525b;">-</td>`;
+                                bodyHtml += '<td style="color:#52525b;" class="' + isTodayCol + '">-</td>';
                             }
                         }
-                        bodyHtml += `</tr>`;
+                        bodyHtml += '</tr>';
                     }
                 }
                 document.getElementById('teloTabele').innerHTML = bodyHtml;
 
             } catch (err) {
                 console.error("Greška pri učitavanju nedelje:", err);
+                document.getElementById('teloTabele').innerHTML = '<tr><td colspan="7" style="color:#f87171; padding:20px;">Greška pri učitavanju podataka. Proveri da li je backend pokrenut.</td></tr>';
             }
         }
 
-        function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena) {
-            document.getElementById('detaljiVreme').innerText = `${datum} u ${vreme}`;
-            document.getElementById('detaljiIme').innerText = ime;
-            document.getElementById('detaljiUsluga').innerText = usluga;
+        function otvoriDetaljeKlijenta(datum, vreme, ime, usluga, cena, telefon) {
+            document.getElementById('detaljiVreme').innerText = datum + ' u ' + vreme;
+            document.getElementById('detaljiIme').innerText = ime || 'Nepoznato';
+            document.getElementById('detaljiTelefon').innerText = telefon || 'Nema';
+            document.getElementById('detaljiUsluga').innerText = usluga || '-';
             document.getElementById('detaljiCena').innerText = cena;
             document.getElementById('otkaziDatum').value = datum;
             document.getElementById('otkaziVreme').value = vreme;
+            document.getElementById('otkaziIme').value = ime;
+            document.getElementById('otkaziUsluga').value = usluga;
+            document.getElementById('otkaziCena').value = cena;
             document.getElementById('detaljiKlijentaModal').style.display = 'flex';
         }
 
@@ -220,19 +266,25 @@
             document.getElementById('detaljiKlijentaModal').style.display = 'none';
         }
 
+        // === ISPRAVKA 3: Naplata šalje na /api/naplati (ne na /api/otkazi!) ===
         async function naplatiTerminIzModala() {
             const datum = document.getElementById('otkaziDatum').value;
             const vreme = document.getElementById('otkaziVreme').value;
-            await fetch('/api/otkazi', {
+            const ime = document.getElementById('otkaziIme').value;
+            const usluga = document.getElementById('otkaziUsluga').value;
+            const cena = document.getElementById('otkaziCena').value;
+
+            await fetch('/api/naplati', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ datum: datum, vreme: vreme })
+                body: JSON.stringify({ datum: datum, vreme: vreme, ime: ime, usluga: usluga, cena: cena })
             });
             zatvoriDetaljeKlijenta();
             ucitajNedelju();
         }
 
         async function potvrdiOtkazivanjeIzModala() {
+            if (!confirm('Da li si siguran da želiš da otkažeš ovaj termin?')) return;
             const datum = document.getElementById('otkaziDatum').value;
             const vreme = document.getElementById('otkaziVreme').value;
             await fetch('/api/otkazi', {
@@ -244,31 +296,29 @@
             ucitajNedelju();
         }
 
-        // Usluge: Prikaz sa direktnim poljima za izmenu
+        // === ISPRAVKA 4: Usluge koriste ID, šalju 'ime' (ne 'naziv'), PUT/DELETE ===
         async function ucitajUslugeAdmin() {
             try {
                 let res = await fetch('/api/usluge');
                 let usluge = await res.json();
                 let kontejner = document.getElementById('listaUslugaAdmin');
-                
+
                 if (!usluge || usluge.length === 0) {
                     kontejner.innerHTML = '<p style="color: #a1a1aa;">Nema unetih usluga.</p>';
                     return;
                 }
 
                 let html = '';
-                usluge.forEach((u, index) => {
-                    let nazivUsluge = u.naziv || u.ime || '';
-                    html += `
-                        <div class="usluga-item">
-                            <div><strong style="color: #fff; font-size: 15px;">${nazivUsluge}</strong></div>
-                            <div class="usluga-inputs">
-                                <input type="text" id="cena_${index}" value="${u.cena}" style="width: 90px;" placeholder="Cena"> RSD
-                                <input type="text" id="trajanje_${index}" value="${u.trajanje || 30}" style="width: 70px;" placeholder="Min"> min
-                                <button onclick="sacuvajIzmenuUsluge('${nazivUsluge}', ${index})" style="background: #ca8a04; padding: 6px 12px; font-size: 12px;">Sačuvaj</button>
-                                <button onclick="obrisiUslugu('${nazivUsluge}')" style="background: #dc2626; padding: 6px 12px; font-size: 12px;">Obriši</button>
-                            </div>
-                        </div>`;
+                usluge.forEach(function(u) {
+                    html += '<div class="usluga-item">' +
+                        '<div><strong style="color: #fff; font-size: 15px;">' + u.ime + '</strong></div>' +
+                        '<div class="usluga-inputs">' +
+                            '<input type="text" id="ime_' + u.id + '" value="' + u.ime + '" style="width: 140px;" placeholder="Naziv">' +
+                            '<input type="text" id="cena_' + u.id + '" value="' + u.cena + '" style="width: 90px;" placeholder="Cena"> RSD ' +
+                            '<input type="text" id="trajanje_' + u.id + '" value="' + (u.trajanje || 30) + '" style="width: 70px;" placeholder="Min"> min ' +
+                            '<button onclick="sacuvajUslugu(' + u.id + ')" style="background: #ca8a04; padding: 6px 12px; font-size: 12px;">Sačuvaj</button>' +
+                            '<button onclick="obrisiUslugu(' + u.id + ')" style="background: #dc2626; padding: 6px 12px; font-size: 12px;">Obriši</button>' +
+                        '</div></div>';
                 });
                 kontejner.innerHTML = html;
             } catch (e) {
@@ -277,12 +327,13 @@
             }
         }
 
+        // === ISPRAVKA 5: Dodavanje šalje 'ime' (ne 'naziv') ===
         async function dodajUslugu() {
-            let naziv = document.getElementById('novaUslugaNaziv').value.trim();
+            let ime = document.getElementById('novaUslugaNaziv').value.trim();
             let cena = document.getElementById('novaUslugaCena').value.trim();
             let trajanje = document.getElementById('novaUslugaTrajanje').value.trim();
-            
-            if (!naziv || !cena) { 
+
+            if (!ime || !cena) { 
                 alert("Unesi naziv i cenu usluge!"); 
                 return; 
             }
@@ -290,7 +341,7 @@
             await fetch('/api/usluge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ naziv, cena: Number(cena), trajanje: Number(trajanje || 30) })
+                body: JSON.stringify({ ime: ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
 
             document.getElementById('novaUslugaNaziv').value = '';
@@ -299,49 +350,52 @@
             ucitajUslugeAdmin();
         }
 
-        async function sacuvajIzmenuUsluge(naziv, index) {
-            let novaCena = document.getElementById(`cena_${index}`).value.trim();
-            let novoTrajanje = document.getElementById(`trajanje_${index}`).value.trim();
+        // === ISPRAVKA 6: Izmena koristi PUT na /api/usluge/<id> ===
+        async function sacuvajUslugu(id) {
+            let ime = document.getElementById('ime_' + id).value.trim();
+            let cena = document.getElementById('cena_' + id).value.trim();
+            let trajanje = document.getElementById('trajanje_' + id).value.trim();
 
-            if (!novaCena) {
-                alert("Cena ne može biti prazna!");
+            if (!ime || !cena) {
+                alert("Naziv i cena ne mogu biti prazni!");
                 return;
             }
 
-            await fetch('/api/usluge', {
-                method: 'POST',
+            await fetch('/api/usluge/' + id, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    naziv: naziv, 
-                    cena: Number(novaCena), 
-                    trajanje: Number(novoTrajanje || 30) 
-                })
+                body: JSON.stringify({ ime: ime, cena: Number(cena), trajanje: Number(trajanje || 30) })
             });
-            alert(`Usluga "${naziv}" je uspešno sačuvana!`);
+            alert('Usluga "' + ime + '" je uspešno sačuvana!');
             ucitajUslugeAdmin();
         }
 
-        async function obrisiUslugu(naziv) {
-            if (!confirm(`Da li si siguran da želiš da obrišeš uslugu: ${naziv}?`)) return;
-            
-            await fetch('/api/usluge', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ naziv })
+        // === ISPRAVKA 7: Brisanje koristi DELETE na /api/usluge/<id> ===
+        async function obrisiUslugu(id) {
+            if (!confirm('Da li si siguran da želiš da obrišeš ovu uslugu?')) return;
+
+            await fetch('/api/usluge/' + id, {
+                method: 'DELETE'
             });
             ucitajUslugeAdmin();
         }
 
+        // === ISPRAVKA 8: Finansije ruta postoji na backendu ===
         async function izracunajFinansije() {
             let odDatuma = document.getElementById('finansijeOd').value;
             let doDatuma = document.getElementById('finansijeDo').value;
             if(!odDatuma || !doDatuma) { alert("Izaberi oba datuma za finansije!"); return; }
             try {
-                let res = await fetch(`/api/finansije?od=${odDatuma}&do=${doDatuma}`);
+                let res = await fetch('/api/finansije?od=' + odDatuma + '&do=' + doDatuma);
                 let data = await res.json();
-                document.getElementById('finansijeInfo').innerText = `Ukupan promet: ${data.ukupno || 0} RSD`;
+                document.getElementById('finansijeInfo').innerText = 'Ukupan promet: ' + (data.ukupno || 0) + ' RSD';
             } catch(e) { console.error("Greška finansije:", e); }
         }
+
+        // Zatvori modal na klik van njega
+        document.getElementById('detaljiKlijentaModal').addEventListener('click', function(e) {
+            if (e.target === this) zatvoriDetaljeKlijenta();
+        });
 
         // Pokretanje
         ucitajNedelju();
