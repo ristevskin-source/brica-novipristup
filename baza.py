@@ -205,11 +205,16 @@ def api_usluga_id(id):
 
 @app.route('/api/zakazi', methods=['POST'])
 def api_zakazi():
-    data = request.get_json()
+    data = request.get_json() or {}
     datum = data.get('datum')
     vreme = data.get('vreme')
 
-    dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
+    # basic validations
+    try:
+        dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
+    except Exception:
+        return jsonify({'status': 'error', 'poruka': 'Neispravan datum'}), 400
+
     if dt_zakazi.weekday() == 6:
         return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
 
@@ -223,20 +228,87 @@ def api_zakazi():
         if vreme < trenutno_vreme:
             return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
 
-    ime = data.get('ime')
-    telefon = data.get('telefon')
-    usluga = data.get('usluga')
-    cena = data.get('cena')
+    ime = (data.get('ime') or '').strip()
+    telefon = (data.get('telefon') or '').strip()
+    usluga_ime = data.get('usluga')
+    cena_input = data.get('cena')
+
+    if not ime or not telefon:
+        return jsonify({'status': 'error', 'poruka': 'Ime i telefon su obavezni'}), 400
 
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
-        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-    ''', (datum, vreme, ime, telefon, usluga, cena))
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
+
+    # find service duration and price from usluge table
+    trajanje = int(data.get('trajanje', 30))
+    cena = int(cena_input) if cena_input is not None else 0
+    if usluga_ime:
+        c.execute("SELECT trajanje, cena FROM usluge WHERE ime = ?", (usluga_ime,))
+        svc = c.fetchone()
+        if svc:
+            trajanje = int(svc['trajanje'])
+            cena = int(svc['cena']) if svc['cena'] is not None else cena
+
+    # compute required 30-min slots
+    sloti = []
+    try:
+        t = datetime.strptime(vreme, "%H:%M")
+    except Exception:
+        conn.close()
+        return jsonify({'status':'error','poruka':'Neispravno vreme'}), 400
+
+    broj = (trajanje + 29) // 30  # ceil to 30-min slots
+    for i in range(broj):
+        sloti.append(t.strftime("%H:%M"))
+        t += timedelta(minutes=30)
+
+    # check against working hours (last slot end should not exceed 20:00)
+    if sloti:
+        poslednje = datetime.strptime(sloti[-1], "%H:%M").time()
+        if poslednje >= datetime.strptime("20:00", "%H:%M").time():
+            conn.close()
+            return jsonify({'status':'error','poruka':'Usluga prevazilazi radno vreme'}), 400
+
+    # check pause (13:00-14:00)
+    for s in sloti:
+        if "13:00" <= s < "14:00":
+            conn.close()
+            return jsonify({'status':'error','poruka':'Izabrano vreme pada u pauzu'}), 400
+
+    # check availability
+    conflicts = []
+    for s in sloti:
+        c.execute("SELECT id, ime FROM rezervacije WHERE datum=? AND vreme=?", (datum, s))
+        row = c.fetchone()
+        if row and row['ime']:
+            conflicts.append(s)
+
+    if conflicts:
+        conn.close()
+        return jsonify({'status':'error', 'poruka':'Nema dovoljno slobodnih termina', 'conflicts': conflicts}), 400
+
+    # reserve slots: first slot gets price, others 0
+    try:
+        prvi = True
+        for s in sloti:
+            cena_slot = cena if prvi else 0
+            c.execute("SELECT id FROM rezervacije WHERE datum=? AND vreme=?", (datum, s))
+            row = c.fetchone()
+            if row:
+                # update existing placeholder row
+                c.execute("UPDATE rezervacije SET ime=?, telefon=?, usluga=?, cena=?, status='zakazan' WHERE id=?",
+                          (ime, telefon, usluga_ime, cena_slot, row['id']))
+            else:
+                c.execute("INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status) VALUES (?,?,?,?,?,?,?)",
+                          (datum, s, ime, telefon, usluga_ime, cena_slot, 'zakazan'))
+            prvi = False
+        conn.commit()
+        return jsonify({'status':'ok'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'status':'error','poruka':str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/api/otkazi', methods=['POST'])
 def api_otkazi():
@@ -320,13 +392,15 @@ def api_nedelja():
 
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ? AND status='zakazan'", (pocetak, kraj))
+    # include service duration so admin can mark multi-slot bookings
+    c.execute("SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, r.telefon, r.status, COALESCE(u.trajanje, 30) as trajanje FROM rezervacije r LEFT JOIN usluge u ON r.usluga = u.ime WHERE datum BETWEEN ? AND ? AND status='zakazan'", (pocetak, kraj))
     rezervacije = c.fetchall()
     conn.close()
 
     raspored = {}
     for r in rezervacije:
-        datum, vreme, ime, usluga, cena, telefon, status = r
+        # unpack now includes trajanje
+        datum, vreme, ime, usluga, cena, telefon, status, trajanje = r
         if datum not in raspored:
             raspored[datum] = {}
         raspored[datum][vreme] = {
@@ -335,7 +409,7 @@ def api_nedelja():
             'cena': cena,
             'telefon': telefon,
             'status': status,
-            'trajanje': 30
+            'trajanje': trajanje
         }
 
     return jsonify(raspored)
