@@ -26,6 +26,7 @@ if c.fetchone()[0] == 0:
 c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje', 1000, 30)")
 c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Brada / Brijanje', 600, 30)")
 c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES ('Šišanje + Brada', 1500, 60)")
+    
 
 c.execute('''
        CREATE TABLE IF NOT EXISTS rezervacije (
@@ -67,18 +68,21 @@ conn.close()
 def uzmi_statistiku_zarade():
 conn = get_connection()
 c = conn.cursor()
+    
+    # Dnevna zarada
 
-# Dnevna zarada
 c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE datum = DATE('now')")
 danas = c.fetchone()[0]
+    
+    # Mesečna zarada
 
-# Mesečna zarada
 c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y-%m', datum) = strftime('%Y-%m', 'now')")
 mesec = c.fetchone()[0]
 
-# Godišnja zarada
+    # Godišnja zarada
 c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE strftime('%Y', datum) = strftime('%Y', 'now')")
 godina = c.fetchone()[0]
+    
 
 conn.close()
 return {"danas": danas, "mesec": mesec, "godina": godina}
@@ -88,15 +92,19 @@ init_db()
 def get_raspored_za_period(pocetak_str, kraj_str):
 conn = get_connection()
 c = conn.cursor()
-c.execute("""
+    c.execute("""
+    c.execute('''
        SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, COALESCE(u.trajanje, 30) as trajanje
        FROM rezervacije r
        LEFT JOIN usluge u ON r.usluga = u.ime
        WHERE r.datum >= ? AND r.datum <= ? AND r.status = 'zakazan'
-   """, (pocetak_str, kraj_str))
+    """, (pocetak_str, kraj_str))
+    
+    ''', (pocetak_str, kraj_str))
 
 rows = c.fetchall()
 conn.close()
+    
 
 rezultat = {}
 for r in rows:
@@ -104,6 +112,7 @@ datum = r["datum"]
 vreme = r["vreme"]
 if datum not in rezultat:
 rezultat[datum] = {}
+            
 
 rezultat[datum][vreme] = {
 "status": "zauzet",
@@ -121,19 +130,26 @@ return render_template('index.html')
 
 @app.route('/admin')
 def admin():
-return render_template('admin.html')
+    return render_template('admin.html', v='1.1')
+    return render_template('admin.html', v='1.2')
 
 # --- API RUTE ---
 @app.route('/api/slotovi/<datum>', methods=['GET'])
 def api_slotovi(datum):
+    # Ako je nedelja (weekday() == 6), vrati praznu listu - nema slobodnih termina
+dt = datetime.strptime(datum, "%Y-%m-%d")
+if dt.weekday() == 6:
+return jsonify([])
 conn = get_connection()
 c = conn.cursor()
-c.execute("""
+    c.execute("""
+    c.execute('''
        SELECT r.vreme, COALESCE(u.trajanje, 30) as trajanje
        FROM rezervacije r
        LEFT JOIN usluge u ON r.usluga = u.ime
        WHERE r.datum = ? AND r.status = 'zakazan'
-   """, (datum,))
+    """, (datum,))
+    ''', (datum,))
 rezervacije = c.fetchall()
 conn.close()
 
@@ -176,45 +192,80 @@ trajanje = data.get('trajanje', 30)
 c.execute("INSERT INTO usluge (ime, cena, trajanje) VALUES (?, ?, ?)", (ime, cena, trajanje))
 conn.commit()
 conn.close()
-return jsonify({'status': 'ok'})
+        return jsonify({'status': 'ok', 'id': c.lastrowid})
 
-@app.route('/api/raspored_nedelja', methods=['GET'])
-def api_raspored_nedelja():
-pocetak = request.args.get('pocetak')
-kraj = request.args.get('kraj')
-if not pocetak or not kraj:
-return jsonify({'poruka': 'Nedostaju parametri'}), 400
-return jsonify(get_raspored_za_period(pocetak, kraj))
+@app.route('/api/usluge/<int:id>', methods=['PUT', 'DELETE'])
+def api_usluga_id(id):
+    conn = get_connection()
+    c = conn.cursor()
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        ime = data.get('ime')
+        cena = data.get('cena')
+        trajanje = data.get('trajanje', 30)
+        c.execute("UPDATE usluge SET ime=?, cena=?, trajanje=? WHERE id=?", (ime, cena, trajanje, id))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'ok'})
+
+    elif request.method == 'DELETE':
+        c.execute("DELETE FROM usluge WHERE id=?", (id,))
+        conn.commit()
+        conn.close()
+return jsonify({'status': 'ok'})
 
 @app.route('/api/zakazi', methods=['POST'])
 def api_zakazi():
 data = request.get_json()
 datum = data.get('datum')
 vreme = data.get('vreme')
+    
+    # 1. Provera: Nedeljom ne radimo (6 = nedelja)
+
+dt_zakazi = datetime.strptime(datum, "%Y-%m-%d")
+if dt_zakazi.weekday() == 6:
+return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
+
+    # 2. Provera: Sprečavanje zakazivanja u prošlosti (SRB vreme UTC+2)
+srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+danas_str = srbija_vreme.strftime('%Y-%m-%d')
+if datum < danas_str:
+return jsonify({'status': 'error', 'poruka': 'Nije moguće zakazati u prošlosti!'}), 400
+        
+
+if datum == danas_str:
+trenutno_vreme = srbija_vreme.strftime('%H:%M')
+if vreme < trenutno_vreme:
+return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
+
 ime = data.get('ime')
 telefon = data.get('telefon')
 usluga = data.get('usluga')
 cena = data.get('cena')
+    
 
 conn = get_connection()
 c = conn.cursor()
-c.execute("""
+    c.execute("""
+    c.execute('''
        INSERT INTO rezervacije (datum, vreme, ime, telefon, usluga, cena, status)
        VALUES (?, ?, ?, ?, ?, ?, 'zakazan')
-   """, (datum, vreme, ime, telefon, usluga, cena))
-conn.commit()
-conn.close()
-return jsonify({'status': 'ok'})
+    """, (datum, vreme, ime, telefon, usluga, cena))
+    ''', (datum, vreme, ime, telefon, usluga, cena))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/otkazi', methods=['POST'])
 def api_otkazi():
-data = request.get_json()
-datum = data.get('datum')
-vreme = data.get('vreme')
+    data = request.get_json()
+    datum = data.get('datum')
+    vreme = data.get('vreme')
 
-conn = get_connection()
-c = conn.cursor()
-c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
 conn.commit()
 conn.close()
 return jsonify({'status': 'ok'})
@@ -227,19 +278,16 @@ vreme = data.get('vreme')
 ime = data.get('ime', '')
 usluga = data.get('usluga', '')
 cena = data.get('cena', 0)
-
-    # 1. Beležimo zaradu
-zabelezi_naplatu(datum, vreme, ime, usluga, cena)
-    otkazi_termin(datum, vreme)
-
-    # 2. Brišemo zauzet termin iz rezervacija
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
-    conn.commit()
-    conn.close()
     
-    return jsonify({"status": "ok"})
+
+zabelezi_naplatu(datum, vreme, ime, usluga, cena)
+    
+
+conn = get_connection()
+c = conn.cursor()
+c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+conn.commit()
+conn.close()
 return jsonify({"status": "ok"})
 
 @app.route('/api/statistika', methods=['GET'])
@@ -248,4 +296,78 @@ statistika = uzmi_statistiku_zarade()
 return jsonify(statistika)
 
 if __name__ == '__main__':
-app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000)
+@app.route('/api/finansije', methods=['GET'])
+def api_finansije():
+    od_datuma = request.args.get('od')
+    do_datuma = request.args.get('do')
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    if od_datuma and do_datuma:
+        c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate WHERE datum BETWEEN ? AND ?", (od_datuma, do_datuma))
+    else:
+        c.execute("SELECT COALESCE(SUM(cena), 0) FROM naplate")
+
+    ukupno = c.fetchone()[0]
+    conn.close()
+    return jsonify({"ukupno": ukupno})
+
+@app.route('/api/rezervacije', methods=['GET'])
+def api_rezervacije():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM rezervacije WHERE status='zakazan' ORDER BY datum DESC, vreme DESC")
+    rezervacije = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return jsonify(rezervacije)
+
+@app.route('/api/nedelja', methods=['GET'])
+def api_nedelja():
+pocetak = request.args.get('pocetak')
+kraj = request.args.get('kraj')
+    
+
+if not pocetak or not kraj:
+try:
+offset = int(request.args.get('offset', 0))
+except ValueError:
+offset = 0
+            
+
+danas = datetime.now()
+ponedeljak = danas - timedelta(days=danas.weekday()) + timedelta(weeks=offset)
+nedelja = ponedeljak + timedelta(days=6)
+        
+
+pocetak = ponedeljak.strftime('%Y-%m-%d')
+kraj = nedelja.strftime('%Y-%m-%d')
+
+conn = get_connection()
+c = conn.cursor()
+    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ?", (pocetak, kraj))
+    c.execute("SELECT datum, vreme, ime, usluga, cena, telefon, status FROM rezervacije WHERE datum BETWEEN ? AND ? AND status='zakazan'", (pocetak, kraj))
+rezervacije = c.fetchall()
+conn.close()
+    
+
+raspored = {}
+for r in rezervacije:
+datum, vreme, ime, usluga, cena, telefon, status = r
+if datum not in raspored:
+raspored[datum] = {}
+raspored[datum][vreme] = {
+'ime': ime,
+'usluga': usluga,
+'cena': cena,
+'telefon': telefon,
+'status': status,
+'trajanje': 30
+}
+        
+
+return jsonify(raspored)
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
