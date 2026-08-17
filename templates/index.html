@@ -10,9 +10,104 @@ body { background-color: #121212; color: #ffffff; }
 .gold-border { border-color: #d4af37; }
 .gold-bg { background-color: #d4af37; }
 .gold-text { color: #d4af37; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  border: 2px solid #d4af37;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.modal-content h2 {
+  color: #d4af37;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.modal-content .detail-row {
+  background: #27272a;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.modal-content .detail-row strong {
+  color: #d4af37;
+  display: block;
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn-ok {
+  background: #d4af37;
+  color: #000;
+}
+
+.btn-ok:hover {
+  background: #e5c158;
+  transform: scale(1.05);
+}
+
+.btn-back {
+  background: #52525b;
+  color: #fff;
+}
+
+.btn-back:hover {
+  background: #71717a;
+}
 </style>
 </head>
 <body class="p-4 max-w-md mx-auto space-y-6">
+
+<!-- Modal za potvrdu zakazivanja -->
+<div id="modalPotvrda" class="modal-overlay">
+  <div class="modal-content">
+    <h2>✅ Termin zakazan!</h2>
+    <div id="modalDetalji"></div>
+    <div class="modal-actions">
+      <button class="btn-ok" onclick="zatvoriModal()">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- Header sa logotipom i radnim vremenom -->
 <header class="text-center py-2 space-y-3">
@@ -156,7 +251,7 @@ async function ucitajSlotove() {
             if (vreme >= "13:00" && vreme < "14:00") {
                 return `<div class="p-2 bg-zinc-950/60 border border-zinc-800/80 rounded text-[10px] text-red-500/50 text-center font-semibold">PAUZA</div>`;
             } else if (status === 'slobodan' || status === 'free' || status === 'available') {
-                return `<button onclick="izaberiTermin('${vreme}')" class="p-2 bg-zinc-800 hover:bg-yellow-500 hover:text-black border border-zinc-700 rounded text-xs text-center font-semibold">${vreme}</button>`;
+                return `<button onclick="izaberiTermin('${vreme}')" class="p-2 bg-zinc-800 hover:bg-yellow-500 hover:text-black border border-zinc-700 rounded text-xs text-center font-semibold transition">${vreme}</button>`;
             } else {
                 return `<div class="p-2 bg-zinc-950 border border-zinc-900 rounded text-xs text-zinc-600 text-center line-through">${vreme}</div>`;
             }
@@ -187,6 +282,50 @@ function azurirajInfo() {
     } else {
         document.getElementById('izabraniInfo').textContent = '';
     }
+}
+
+function prikaziModalPotvrde(rez) {
+    const modal = document.getElementById('modalPotvrda');
+    const detalji = document.getElementById('modalDetalji');
+    
+    detalji.innerHTML = `
+        <div class="detail-row">
+            📅 Datum
+            <strong>${rez.datum}</strong>
+        </div>
+        <div class="detail-row">
+            🕐 Vreme
+            <strong>${rez.vreme} h</strong>
+        </div>
+        <div class="detail-row">
+            ✂️ Usluga
+            <strong>${rez.usluga}</strong>
+        </div>
+        <div class="detail-row">
+            💰 Cena
+            <strong>${rez.cena} RSD</strong>
+        </div>
+        <div class="detail-row">
+            👤 Klijent
+            <strong>${rez.ime}</strong>
+        </div>
+        <div class="detail-row">
+            📱 Telefon
+            <strong>${rez.telefon}</strong>
+        </div>
+    `;
+    
+    modal.classList.add('show');
+}
+
+function zatvoriModal() {
+    document.getElementById('modalPotvrda').classList.remove('show');
+    // Resetuj formu i osvežи slotove
+    document.getElementById('formaZakazivanje').classList.add('hidden');
+    document.getElementById('klijentIme').value = '';
+    document.getElementById('klijentTel').value = '';
+    izabranoVreme = null;
+    ucitajSlotove();
 }
 
 async function potvrdizakazivanje() {
@@ -226,8 +365,8 @@ async function potvrdizakazivanje() {
 
         const data = await res.json();
         if (res.ok && data.status === 'ok') {
-            alert('✅ Uspešno ste zakazali termin!');
-            location.reload();
+            // Prikaži modal sa potvrdom
+            prikaziModalPotvrde(data.rezervacija);
         } else {
             alert(data.poruka || 'Greška pri zakazivanju.');
         }
