@@ -364,11 +364,46 @@ def api_otkazi():
 
     conn = get_connection()
     c = conn.cursor()
-    # Brisanje SAMO prvog slota (gde je cena)
-    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+
+    # Pronađi rezervaciju na kliknutom slotu
+    c.execute("""
+        SELECT ime, telefon, usluga
+        FROM rezervacije
+        WHERE datum = ? AND vreme = ? AND status = 'zakazan'
+    """, (datum, vreme))
+
+    rezervacija = c.fetchone()
+
+    if not rezervacija:
+        conn.close()
+        return jsonify({
+            'status': 'error',
+            'poruka': 'Rezervacija nije pronađena'
+        }), 404
+
+    ime = rezervacija['ime']
+    telefon = rezervacija['telefon']
+    usluga = rezervacija['usluga']
+
+    # Obriši SVE slotove koji pripadaju istoj rezervaciji
+    c.execute("""
+        DELETE FROM rezervacije
+        WHERE datum = ?
+          AND ime = ?
+          AND telefon = ?
+          AND usluga = ?
+          AND status = 'zakazan'
+    """, (datum, ime, telefon, usluga))
+
+    obrisano = c.rowcount
+
     conn.commit()
     conn.close()
-    return jsonify({'status': 'ok'})
+
+    return jsonify({
+        'status': 'ok',
+        'obrisano_slotova': obrisano
+    })
 
 @app.route('/api/naplati', methods=['POST'])
 def api_naplati():
