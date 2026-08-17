@@ -122,14 +122,20 @@ def index():
 
 @app.route('/admin')
 def admin():
-    return render_template('admin.html', v='1.2')
+    return render_template('admin.html', v='1.3')
 
 # --- API RUTE ---
 @app.route('/api/slotovi/<datum>', methods=['GET'])
 def api_slotovi(datum):
-    dt = datetime.strptime(datum, "%Y-%m-%d")
+    try:
+        dt = datetime.strptime(datum, "%Y-%m-%d")
+    except:
+        return jsonify([]), 400
+        
+    # Nedelja = 6, a mi radimo Pon-Ned (0-5)
     if dt.weekday() == 6:
         return jsonify([])
+    
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
@@ -218,15 +224,19 @@ def api_zakazi():
     if dt_zakazi.weekday() == 6:
         return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
 
+    # Vremenska validacija — strožija!
     srbija_vreme = datetime.utcnow() + timedelta(hours=2)
     danas_str = srbija_vreme.strftime('%Y-%m-%d')
+    
     if datum < danas_str:
         return jsonify({'status': 'error', 'poruka': 'Nije moguće zakazati u prošlosti!'}), 400
 
     if datum == danas_str:
         trenutno_vreme = srbija_vreme.strftime('%H:%M')
-        if vreme < trenutno_vreme:
-            return jsonify({'status': 'error', 'poruka': 'Izabrani termin je već prošao!'}), 400
+        # Dodaj 30 minuta minimalnog vremena čekanja
+        min_vreme = (srbija_vreme + timedelta(minutes=30)).strftime('%H:%M')
+        if vreme < min_vreme:
+            return jsonify({'status': 'error', 'poruka': 'Termin mora biti najmanje 30 minuta od sada!'}), 400
 
     ime = (data.get('ime') or '').strip()
     telefon = (data.get('telefon') or '').strip()
@@ -275,10 +285,10 @@ def api_zakazi():
             conn.close()
             return jsonify({'status':'error','poruka':'Izabrano vreme pada u pauzu'}), 400
 
-    # check availability
+    # check availability — OVO JE KLJUČNO!
     conflicts = []
     for s in sloti:
-        c.execute("SELECT id, ime FROM rezervacije WHERE datum=? AND vreme=?", (datum, s))
+        c.execute("SELECT id, ime FROM rezervacije WHERE datum=? AND vreme=? AND status='zakazan'", (datum, s))
         row = c.fetchone()
         if row and row['ime']:
             conflicts.append(s)
@@ -318,6 +328,7 @@ def api_otkazi():
 
     conn = get_connection()
     c = conn.cursor()
+    # Brisanje SAMO prvog slota (gde je cena)
     c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
     conn.commit()
     conn.close()
@@ -334,9 +345,15 @@ def api_naplati():
 
     zabelezi_naplatu(datum, vreme, ime, usluga, cena)
 
+    # Obriši sve slotove za ovu rezervaciju (svi sa istim imenom i datumom)
     conn = get_connection()
     c = conn.cursor()
-    c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, vreme))
+    c.execute("SELECT vreme FROM rezervacije WHERE datum = ? AND ime = ? ORDER BY vreme", (datum, ime))
+    svi_slotovi = c.fetchall()
+    
+    for slot_row in svi_slotovi:
+        c.execute("DELETE FROM rezervacije WHERE datum = ? AND vreme = ?", (datum, slot_row['vreme']))
+    
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
@@ -392,14 +409,21 @@ def api_nedelja():
 
     conn = get_connection()
     c = conn.cursor()
-    # include service duration so admin can mark multi-slot bookings
-    c.execute("SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, r.telefon, r.status, COALESCE(u.trajanje, 30) as trajanje FROM rezervacije r LEFT JOIN usluge u ON r.usluga = u.ime WHERE datum BETWEEN ? AND ? AND status='zakazan'", (pocetak, kraj))
+    # ISPRAVLJENA SQL QUERY — sa BETWEEN umesto [...]
+    c.execute("""
+        SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, r.telefon, r.status, COALESCE(u.trajanje, 30) as trajanje 
+        FROM rezervacije r 
+        LEFT JOIN usluge u ON r.usluga = u.ime 
+        WHERE r.datum BETWEEN ? AND ? AND r.status = 'zakazan'
+        ORDER BY r.datum, r.vreme
+    """, (pocetak, kraj))
+    
     rezervacije = c.fetchall()
     conn.close()
 
     raspored = {}
     for r in rezervacije:
-        # unpack now includes trajanje
+        # unpack includes trajanje
         datum, vreme, ime, usluga, cena, telefon, status, trajanje = r
         if datum not in raspored:
             raspored[datum] = {}
