@@ -1,9 +1,10 @@
 import sqlite3 
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
+import os
 
 app = Flask(__name__)
-DB_NAME = 'brica.db'
+DB_NAME = os.environ.get('DB_NAME', 'brica.db')
 
 # Simple favicon route to avoid 404 in browser console
 @app.route('/favicon.ico')
@@ -41,7 +42,8 @@ def init_db():
             telefon TEXT,
             usluga TEXT,
             cena INTEGER,
-            status TEXT DEFAULT 'zakazan'
+            status TEXT DEFAULT 'zakazan',
+            kreirano TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -136,6 +138,13 @@ def api_slotovi(datum):
     if dt.weekday() == 6:
         return jsonify([])
     
+    # Provera da li je datum u prošlosti
+    srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+    danas_str = srbija_vreme.strftime('%Y-%m-%d')
+    
+    if datum < danas_str:
+        return jsonify([])
+    
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
@@ -161,8 +170,23 @@ def api_slotovi(datum):
     start = datetime.strptime("09:00", "%H:%M")
     end = datetime.strptime("20:00", "%H:%M")
 
+    # Ako je danas, počni od sledećeg slobodnog slota (30 min od sada)
+    if datum == danas_str:
+        trenutno_vreme = srbija_vreme
+        # Zaokruži na sledeću 30-minutsku granicu
+        if trenutno_vreme.minute > 0:
+            trenutno_vreme = trenutno_vreme.replace(minute=0) + timedelta(hours=1)
+        else:
+            trenutno_vreme = trenutno_vreme + timedelta(minutes=30)
+        
+        start = trenutno_vreme
+
     while start < end:
         vreme_str = start.strftime("%H:%M")
+        # Pauza: 13:00-14:00
+        if vreme_str >= "13:00" and vreme_str < "14:00":
+            start += timedelta(minutes=30)
+            continue
         status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
         svi_slotovi.append({'vreme': vreme_str, 'status': status})
         start += timedelta(minutes=30)
@@ -224,7 +248,7 @@ def api_zakazi():
     if dt_zakazi.weekday() == 6:
         return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
 
-    # Vremenska validacija — strožija!
+    # Vremenska validacija — STROŽIJA!
     srbija_vreme = datetime.utcnow() + timedelta(hours=2)
     danas_str = srbija_vreme.strftime('%Y-%m-%d')
     
@@ -272,10 +296,10 @@ def api_zakazi():
         sloti.append(t.strftime("%H:%M"))
         t += timedelta(minutes=30)
 
-    # check against working hours (last slot end should not exceed 20:00)
+    # check against working hours (last slot should not exceed 20:00)
     if sloti:
-        poslednje = datetime.strptime(sloti[-1], "%H:%M").time()
-        if poslednje >= datetime.strptime("20:00", "%H:%M").time():
+        poslednje = datetime.strptime(sloti[-1], "%H:%M")
+        if poslednje >= datetime.strptime("20:00", "%H:%M"):
             conn.close()
             return jsonify({'status':'error','poruka':'Usluga prevazilazi radno vreme'}), 400
 
@@ -285,7 +309,7 @@ def api_zakazi():
             conn.close()
             return jsonify({'status':'error','poruka':'Izabrano vreme pada u pauzu'}), 400
 
-    # check availability — OVO JE KLJUČNO!
+    # check availability — STROGA PROVERA SVIH SLOTOVA!
     conflicts = []
     for s in sloti:
         c.execute("SELECT id, ime FROM rezervacije WHERE datum=? AND vreme=? AND status='zakazan'", (datum, s))
@@ -313,7 +337,19 @@ def api_zakazi():
                           (datum, s, ime, telefon, usluga_ime, cena_slot, 'zakazan'))
             prvi = False
         conn.commit()
-        return jsonify({'status':'ok'})
+        # Vrati potvrdu sa svim detaljima
+        return jsonify({
+            'status': 'ok',
+            'poruka': 'Termin uspešno zakazan!',
+            'rezervacija': {
+                'datum': datum,
+                'vreme': vreme,
+                'ime': ime,
+                'telefon': telefon,
+                'usluga': usluga_ime,
+                'cena': cena
+            }
+        })
     except Exception as e:
         conn.rollback()
         return jsonify({'status':'error','poruka':str(e)}), 500
@@ -409,7 +445,7 @@ def api_nedelja():
 
     conn = get_connection()
     c = conn.cursor()
-    # ISPRAVLJENA SQL QUERY — sa BETWEEN umesto [...]
+    # ISPRAVLJENA SQL QUERY — sa BETWEEN
     c.execute("""
         SELECT r.datum, r.vreme, r.ime, r.usluga, r.cena, r.telefon, r.status, COALESCE(u.trajanje, 30) as trajanje 
         FROM rezervacije r 
@@ -437,6 +473,10 @@ def api_nedelja():
         }
 
     return jsonify(raspored)
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
