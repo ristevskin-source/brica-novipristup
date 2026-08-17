@@ -182,31 +182,44 @@
                 let podaci = await res.json();
 
                 let zauzetiBlokovi = {};
+
                 if (podaci) {
                     Object.keys(podaci).forEach(function(datum) {
+                
+                        if (!zauzetiBlokovi[datum]) {
+                            zauzetiBlokovi[datum] = {};
+                        }
+                
                         Object.keys(podaci[datum]).forEach(function(vreme) {
+                
                             let klijent = podaci[datum][vreme];
-                            if (klijent) {
-                                let trajanje = klijent.trajanje || 30;
-                                let parts = vreme.split(':');
-                                let h = parseInt(parts[0]);
-                                let m = parseInt(parts[1]);
-                                let ukupnoSlotova = Math.ceil(trajanje / 30);
-                                for (let i = 0; i < ukupnoSlotova; i++) {
-                                    let slotVreme = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-                                    if (!zauzetiBlokovi[datum]) zauzetiBlokovi[datum] = {};
-                                    zauzetiBlokovi[datum][slotVreme] = klijent;
-                                    m += 30;
-                                    if (m >= 60) {
-                                        h += 1;
-                                        m -= 60;
-                                    }
-                                }
+                
+                            if (!klijent) return;
+                
+                            let trajanje = Number(klijent.trajanje || 30);
+                            let brojSlotova = Math.ceil(trajanje / 30);
+                
+                            let pocetak = new Date('2000-01-01T' + vreme + ':00');
+                
+                            for (let i = 0; i < brojSlotova; i++) {
+                
+                                let slotDatum = new Date(
+                                    pocetak.getTime() + i * 30 * 60000
+                                );
+                
+                                let slotVreme =
+                                    String(slotDatum.getHours()).padStart(2, '0') +
+                                    ':' +
+                                    String(slotDatum.getMinutes()).padStart(2, '0');
+                
+                                zauzetiBlokovi[datum][slotVreme] = {
+                                    klijent: klijent,
+                                    pocetak: vreme
+                                };
                             }
                         });
                     });
                 }
-
                 let bodyHtml = '';
                 let pocetniSat = 9;
                 let krajnjiSat = 20;
