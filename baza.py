@@ -140,8 +140,8 @@ return jsonify([])
 
 # Provera da li je datum u prošlosti
 srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+srbija_vreme = srbija_vreme.replace(tzinfo=None)  # <-- DODAJ OVO
 danas_str = srbija_vreme.strftime('%Y-%m-%d')
-
 if datum < danas_str:
 return jsonify([])
 
