@@ -168,7 +168,7 @@ trenutni += timedelta(minutes=30)
 
 svi_slotovi = []
 start = datetime.strptime("09:00", "%H:%M")
-end = datetime.strptime("20:00", "%H:%M")
+end = datetime.strptime(f"{datum} 20:00", "%Y-%m-%d %H:%M")
 
 # Ako je danas, počni od sledećeg slobodnog slota (30 min od sada)
 if datum == danas_str:
