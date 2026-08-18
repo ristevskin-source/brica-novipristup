@@ -179,6 +179,7 @@ trenutno_vreme = trenutno_vreme.replace(minute=0) + timedelta(hours=1)
 else:
 trenutno_vreme = trenutno_vreme + timedelta(minutes=30)
 
+start = start.replace(tzinfo=None)
 start = trenutno_vreme
 
 while start < end:
