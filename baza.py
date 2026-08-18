@@ -172,27 +172,30 @@ end = datetime.strptime(f"{datum} 20:00", "%Y-%m-%d %H:%M")
 
 # Ako je danas, počni od sledećeg slobodnog slota (30 min od sada)
 if datum == danas_str:
-trenutno_vreme = srbija_vreme
-# Zaokruži na sledeću 30-minutsku granicu
-if trenutno_vreme.minute > 0:
-trenutno_vreme = trenutno_vreme.replace(minute=0) + timedelta(hours=1)
-else:
-trenutno_vreme = trenutno_vreme + timedelta(minutes=30)
+    trenutno_vreme = srbija_vreme
+    # Zaokruži na sledeću 30-minutsku granicu
+    if trenutno_vreme.minute > 0:
+        trenutno_vreme = trenutno_vreme.replace(minute=0) + timedelta(hours=1)
+    else:
+        trenutno_vreme = trenutno_vreme + timedelta(minutes=30)
 
-start = start.replace(tzinfo=None)
-start = trenutno_vreme
+    start = trenutno_vreme
+    end = datetime.strptime(f"{datum} 20:00", "%Y-%m-%d %H:%M")
+    
+    # 🔧 DODAJ OVU LINIJU - UKLANJA VREMENSKU ZONU SA START-A
+    start = start.replace(tzinfo=None)
 
-while start < end:
-vreme_str = start.strftime("%H:%M")
-# Pauza: 13:00-14:00
-if vreme_str >= "13:00" and vreme_str < "14:00":
-start += timedelta(minutes=30)
-continue
-status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
-svi_slotovi.append({'vreme': vreme_str, 'status': status})
-start += timedelta(minutes=30)
+    while start < end:
+        vreme_str = start.strftime("%H:%M")
+        # Pauza: 13:00-14:00
+        if vreme_str >= "13:00" and vreme_str < "14:00":
+            start += timedelta(minutes=30)
+            continue
+        status = 'zauzet' if vreme_str in zauzeti_slotovi else 'slobodan'
+        svi_slotovi.append({'vreme': vreme_str, 'status': status})
+        start += timedelta(minutes=30)
 
-return jsonify(svi_slotovi)
+    return jsonify(svi_slotovi)
 
 @app.route('/api/usluge', methods=['GET', 'POST'])
 def api_usluge():
