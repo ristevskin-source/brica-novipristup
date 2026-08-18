@@ -138,10 +138,12 @@ def api_slotovi(datum):
     if dt.weekday() == 6:
         return jsonify([])
     
-    # Provera da li je datum u prošlosti
-    srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+        # Provera da li je datum u prošlosti (PAMETNIJE)
+    from datetime import timezone
+    srbija_vreme = datetime.now(timezone.utc).astimezone() + timedelta(hours=2)
     danas_str = srbija_vreme.strftime('%Y-%m-%d')
     
+    # Poredi DATUM, ali dozvoli DANAŠNJI dan (čak i ako je kasno)
     if datum < danas_str:
         return jsonify([])
     
