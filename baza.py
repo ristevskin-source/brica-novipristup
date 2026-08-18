@@ -167,7 +167,7 @@ zauzeti_slotovi.add(trenutni.strftime("%H:%M"))
 trenutni += timedelta(minutes=30)
 
 svi_slotovi = []
-start = datetime.strptime("09:00", "%H:%M")
+start = datetime.strptime(f"{datum} 09:00", "%Y-%m-%d %H:%M")
 end = datetime.strptime(f"{datum} 20:00", "%Y-%m-%d %H:%M")
 
 # Ako je danas, počni od sledećeg slobodnog slota (30 min od sada)
