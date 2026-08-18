@@ -9,7 +9,7 @@ DB_NAME = os.environ.get('DB_NAME', 'brica.db')
 # Simple favicon route to avoid 404 in browser console
 @app.route('/favicon.ico')
 def favicon():
-return ('', 204)
+    return ('', 204)
 
 def get_connection():
 conn = sqlite3.connect(DB_NAME)
