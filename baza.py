@@ -256,8 +256,8 @@ return jsonify({'status': 'error', 'poruka': 'Nedeljom ne radimo!'}), 400
 
 # Vremenska validacija — STROŽIJA!
 srbija_vreme = datetime.utcnow() + timedelta(hours=2)
+srbija_vreme = srbija_vreme.replace(tzinfo=None)  # <-- DODAJ OVO
 danas_str = srbija_vreme.strftime('%Y-%m-%d')
-
 if datum < danas_str:
 return jsonify({'status': 'error', 'poruka': 'Nije moguće zakazati u prošlosti!'}), 400
 
